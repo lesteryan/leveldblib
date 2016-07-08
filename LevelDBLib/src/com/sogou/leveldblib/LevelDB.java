@@ -4,8 +4,8 @@ public class LevelDB {
 	
 	public LevelDB()
 	{
-//		open();
-//		insert();
+		open();
+		insert();
 	}
 	
 	public native boolean open();
