@@ -48,37 +48,40 @@ class KvDB
 	//get a record, return index
 	int getRecord(string &data)
 	{
+		LOGE("temp01");
 		if(isOpenSuccess == false)
 		{
 			return -1;
 		}
 		data.clear();
-
+		LOGE("temp02");
 		int index;
 		if(fscanf(fp, "%d", &index) <= 0)
 		{
 			LOGE("read end");
 			return -1;
 		}
-
+		LOGE("temp03");
 //		sprintf(tempBuffer, "get reocrd success, index = %d", index);
 //		LOGE(tempBuffer);
 
 
 		kvdbEngine::Record *record = table.search("NaviData", index);
+		LOGE("temp031");
 		if(record == 0)
 		{
+			LOGE("temp032");
 			sprintf(tempBuffer, "get index failed, index = %d", index);
 			LOGE(tempBuffer);
 			return -1;
-		}
+		}LOGE("temp04");
 		string temp;
 		for(int i = 0 ; i < 4 ; i++)
 		{
 			if(record->getFieldAsString(i ,temp))
 				data+=temp;
 		}
-
+		LOGE("temp05");
 //		sprintf(tempBuffer, "get reocrd success, index = %d ,size = %d", index, data.size());
 //		LOGE(tempBuffer);
 
@@ -148,6 +151,7 @@ class KvDB
 
 	~KvDB()
 	{
+		LOGE("kvdb deleted");
 		if(isOpenSuccess)
 		{
 			table.close();

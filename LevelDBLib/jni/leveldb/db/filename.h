@@ -45,7 +45,7 @@ extern std::string SSTTableFileName(const std::string& dbname, uint64_t number);
 // Return the name of the descriptor file for the db named by
 // "dbname" and the specified incarnation number.  The result will be
 // prefixed with "dbname".
-extern std::string DescriptorFileName(const std::string& dbname);
+extern std::string DescriptorFileName(const std::string& dbpath, const std::string& dbname);
 
 // Return the name of the current file.  This file contains the name
 // of the current manifest file.  The result will be prefixed with
@@ -75,7 +75,7 @@ extern bool ParseFileName(const std::string& filename,
 
 // Make the CURRENT file point to the descriptor file with the
 // specified number.
-extern Status SetCurrentFile(Env* env, const std::string& dbname,
+extern Status SetCurrentFile(Env* env, const std::string& dbpath, const std::string& dbname,
                              uint64_t descriptor_number);
 
 

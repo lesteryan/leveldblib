@@ -278,6 +278,7 @@ void leveldb_compact_range(
 
 void leveldb_destroy_db(
     const leveldb_options_t* options,
+	const char* path,
     const char* name,
     char** errptr) {
   SaveError(errptr, DestroyDB(name, options->rep));
@@ -285,9 +286,10 @@ void leveldb_destroy_db(
 
 void leveldb_repair_db(
     const leveldb_options_t* options,
+	const char* path,
     const char* name,
     char** errptr) {
-  SaveError(errptr, RepairDB(name, options->rep));
+  SaveError(errptr, RepairDB(path, name, options->rep));
 }
 
 void leveldb_iter_destroy(leveldb_iterator_t* iter) {
@@ -506,7 +508,7 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
     ~Wrapper() { delete rep_; }
     const char* Name() const { return rep_->Name(); }
     void CreateFilter(const Slice* keys, int n, std::string* dst) const {
-      return rep_->CreateFilter(keys, n, dst);
+       rep_->CreateFilter(keys, n, dst);
     }
     bool KeyMayMatch(const Slice& key, const Slice& filter) const {
       return rep_->KeyMayMatch(key, filter);

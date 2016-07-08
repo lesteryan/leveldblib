@@ -44,8 +44,9 @@ namespace {
 
 class Repairer {
  public:
-  Repairer(const std::string& dbname, const Options& options)
+  Repairer(const std::string& dbpath, const std::string& dbname, const Options& options)
       : dbname_(dbname),
+		dbpath_(dbpath),
         env_(options.env),
         icmp_(options.comparator),
         ipolicy_(options.filter_policy),
@@ -54,7 +55,7 @@ class Repairer {
         owns_cache_(options_.block_cache != options.block_cache),
         next_file_number_(1) {
     // TableCache can be small since we expect each table to be opened once.
-    table_cache_ = new TableCache(dbname_, &options_, 10);
+    table_cache_ = new TableCache(dbpath_, &options_, 10);
   }
 
   ~Repairer() {
@@ -98,6 +99,7 @@ class Repairer {
   };
 
   std::string const dbname_;
+  std::string const dbpath_;
   Env* const env_;
   InternalKeyComparator const icmp_;
   InternalFilterPolicy const ipolicy_;
@@ -421,9 +423,9 @@ class Repairer {
       }
 
       // Install new manifest
-      status = env_->RenameFile(tmp, DescriptorFileName(dbname_));
+      status = env_->RenameFile(tmp, DescriptorFileName(dbpath_, dbname_));
       if (status.ok()) {
-        status = SetCurrentFile(env_, dbname_, 1);
+        status = SetCurrentFile(env_, dbpath_, dbname_, 1);
       } else {
         env_->DeleteFile(tmp);
       }
@@ -453,8 +455,8 @@ class Repairer {
 };
 }  // namespace
 
-Status RepairDB(const std::string& dbname, const Options& options) {
-  Repairer repairer(dbname, options);
+Status RepairDB(const std::string& dbpath, const std::string& dbname, const Options& options) {
+  Repairer repairer(dbpath, dbname, options);
   return repairer.Run();
 }
 

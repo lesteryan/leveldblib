@@ -157,7 +157,7 @@ Status DestroyDB(const std::string& name, const Options& options);
 // resurrect as much of the contents of the database as possible.
 // Some data may be lost, so be careful when calling this function
 // on a database that contains important information.
-Status RepairDB(const std::string& dbname, const Options& options);
+Status RepairDB(const std::string& dbpath, const std::string& dbname, const Options& options);
 
 }  // namespace leveldb
 

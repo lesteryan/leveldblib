@@ -39,11 +39,10 @@ std::string SSTTableFileName(const std::string& name, uint64_t number) {
   return MakeFileName(name, number, "sst");
 }
 
-std::string DescriptorFileName(const std::string& dbname) {
-  assert(number > 0);
+std::string DescriptorFileName(const std::string& dbpath, const std::string& dbname) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "/MANIFEST");
-  return dbname + buf;
+  snprintf(buf, sizeof(buf), "/.manifest");
+  return dbpath + dbname + buf;
 }
 
 std::string CurrentFileName(const std::string& dbname) {
@@ -115,10 +114,10 @@ bool ParseFileName(const std::string& fname,
   return true;
 }
 
-Status SetCurrentFile(Env* env, const std::string& dbname,
+Status SetCurrentFile(Env* env, const std::string& dbpath, const std::string& dbname,
                       uint64_t descriptor_number) {
   // Remove leading "dbname/" and add newline to manifest file name
-  std::string manifest = DescriptorFileName(dbname);
+  std::string manifest = DescriptorFileName(dbpath, dbname);
   Slice contents = manifest;
   assert(contents.starts_with(dbname + "/"));
   contents.remove_prefix(dbname.size() + 1);

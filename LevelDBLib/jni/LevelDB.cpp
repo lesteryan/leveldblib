@@ -15,6 +15,11 @@ public:
 	    kvdb = NULL;
 	}
 
+	~LevelDB()
+	{
+		close();
+	}
+
 	bool open()
 	{
 		myOptions.create_if_missing = true;
@@ -46,31 +51,36 @@ public:
 		count = 0;
 
 		timeUtil.start();
-		while((index = kvdb->getRecord(record)) != -1)
-		{
-			count++;
-			Int2String(index, key);
-			batch.Put(key, record);
+//		LOGE("ready write ti batch");
+//		while((index = kvdb->getRecord(record)) != -1)
+//		{
+//			count++;
+//			Int2String(index, key);
+//			LOGE("temp1");
+//			batch.Put(key, record);
+//			LOGE("temp2");
+//			if(count % 100 ==0)
+//			{
+//				sprintf(tmpArray, "times = %d", count);
+//				LOGE(tmpArray);
+//
+////				status = db->Write(leveldb::WriteOptions(), &batch);
+//
+////				if(!status.ok())
+////				{
+////					LOGE(status.ToString().data());
+////					return -1;
+////				}
+////				batch.Clear();
+//			}
+//		}
 
-			if(count % 100 ==0)
-			{
-				sprintf(tmpArray, "times = %d", count);
-				LOGE(tmpArray);
+		batch.Put("key", "value");
 
-//				status = db->Write(leveldb::WriteOptions(), &batch);
-
-//				if(!status.ok())
-//				{
-//					LOGE(status.ToString().data());
-//					return -1;
-//				}
-//				batch.Clear();
-			}
-		}
-
-		LOGE("write to batch finished");
+//		LOGE("write to batch finished");
 
 		leveldb::WriteOptions opt= leveldb::WriteOptions();
+		opt.sync = true;
 		status = db->Write(leveldb::WriteOptions(), &batch);
 
 		if(!status.ok())
@@ -81,8 +91,8 @@ public:
 
 		timeUtil.stop();
 
-		sprintf(tmpArray, "insert times = %d", count);
-		LOGE(tmpArray);
+//		sprintf(tmpArray, "insert times = %d", count);
+//		LOGE(tmpArray);
 
 		LOGE("leveldb insert success");
 
@@ -99,29 +109,39 @@ public:
 	{
 		int count = TIMES;
 		int index;
-		string key;
+		string key, value;
 		timeUtil.start();
-		while(count-- >= 0)
-		{
-			index = kvdb->getRandomIndex();
-			Int2String(index, key);
-			string leveldbRecord, kvdbrecord;
-			status = db->Get(leveldb::ReadOptions(), key, &leveldbRecord);
-			if(!status.ok())
-				return -1;
+//		while(count-- >= 0)
+//		{
+//			index = kvdb->getRandomIndex();
+//			Int2String(index, key);
+//			string leveldbRecord, kvdbrecord;
+//			status = db->Get(leveldb::ReadOptions(), key, &leveldbRecord);
+//			if(!status.ok())
+//				return -1;
+////
+////			if(!kvdb.getRecord(index, kvdbrecord))
+////				LOGE("get record failed");
+////
+////			if(leveldbRecord.compare(kvdbrecord) != 0)
+////			{
+//////				sprintf(tmpArray, "leveldb %s size = %d navilinkdb %s size = %d", str2hex(leveldbRecord), leveldbRecord.size(), str2hex(kvdbrecord), kvdbrecord.size());
+//////				LOGE(tmpArray);
+////				LOGE("compare error");
+////
+////				break;
+////			}
 //
-//			if(!kvdb.getRecord(index, kvdbrecord))
-//				LOGE("get record failed");
-//
-//			if(leveldbRecord.compare(kvdbrecord) != 0)
-//			{
-////				sprintf(tmpArray, "leveldb %s size = %d navilinkdb %s size = %d", str2hex(leveldbRecord), leveldbRecord.size(), str2hex(kvdbrecord), kvdbrecord.size());
-////				LOGE(tmpArray);
-//				LOGE("compare error");
-//
-//				break;
-//			}
+//		}
 
+		status = db->Get(leveldb::ReadOptions(), "key", &value);
+		if(status.ok())
+		{
+			LOGE((std::string("query success ") + value).data());
+		}
+		else
+		{
+			LOGE("query failed");
 		}
 
 		timeUtil.stop();
@@ -131,35 +151,29 @@ public:
 
 	bool close()
 	{
-		delete kvdb;
-		kvdb = NULL;
-		delete db;
-		db = NULL;
+		if(kvdb != NULL)
+		{
+			delete kvdb;
+			kvdb = NULL;
+		}
+
+		if(db != NULL)
+		{
+			db->~DB();
+//			delete [] db;
+			db = NULL;
+		}
+
+		LOGE("leveldb closed success");
 
 		return true;
 	}
 
 	bool reopen()
 	{
-		vector<int> readedIndex = kvdb->getAllReadedIndex();
-
-		if(!close())
-		{
-			LOGE("close error");
-			return false;
-		}
-
-		LOGE("close success");
-
-		if(!open())
-		{
-			LOGE("open error");
-			return false;
-		}
-
-		LOGE("open success");
-
-		kvdb->setReadedIndex(readedIndex);
+		open();
+		query();
+		close();
 
 		return true;
 	}
@@ -278,10 +292,8 @@ static LevelDB *levelDB = NULL;
 
 extern "C" bool Java_com_sogou_leveldblib_LevelDB_open(JNIEnv* env, jobject thiz)
 {
-	if(levelDB != NULL)
-		delete levelDB;
-
-	levelDB = new LevelDB();
+	if(levelDB == NULL)
+		levelDB = new LevelDB();
 
 	return levelDB->open();
 
@@ -314,6 +326,7 @@ extern "C" jlong Java_com_sogou_leveldblib_LevelDB_query(JNIEnv* env, jobject th
 
 extern "C" bool Java_com_sogou_leveldblib_LevelDB_close(JNIEnv* env, jobject thiz)
 {
+	levelDB->close();
 	delete levelDB;
 	levelDB = NULL;
 	return true;
@@ -321,7 +334,8 @@ extern "C" bool Java_com_sogou_leveldblib_LevelDB_close(JNIEnv* env, jobject thi
 
 extern "C" bool Java_com_sogou_leveldblib_LevelDB_reopen(JNIEnv* env, jobject thiz)
 {
-	levelDB = new LevelDB();
-
-	return levelDB->reopen();
+//	levelDB = new LevelDB();
+//
+//	return levelDB->reopen();
+	return false;
 }

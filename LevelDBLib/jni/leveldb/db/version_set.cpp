@@ -763,11 +763,13 @@ class VersionSet::Builder {
   }
 };
 
-VersionSet::VersionSet(const std::string& dbname,
+VersionSet::VersionSet(const std::string& dbpath,
+					   const std::string& dbname,
                        const Options* options,
                        TableCache* table_cache,
                        const InternalKeyComparator* cmp)
     : env_(options->env),
+	  dbpath_(dbpath),
       dbname_(dbname),
       options_(options),
       table_cache_(table_cache),
@@ -832,14 +834,14 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   Finalize(v);
 
   // Initialize new descriptor log file if necessary by creating
-  // a temporary file that contains a snapshot of the current version.
+  // a horary file that contains a snapshot of the current version.
   std::string new_manifest_file;
   Status s;
   if (descriptor_log_ == NULL) {
     // No reason to unlock *mu here since we only hit this path in the
     // first call to LogAndApply (when opening the database).
     assert(descriptor_file_ == NULL);
-    new_manifest_file = DescriptorFileName(dbname_);
+    new_manifest_file = DescriptorFileName(dbpath_, dbname_);
     edit->SetNextFile(next_file_number_);
     s = env_->NewWritableFile(new_manifest_file, &descriptor_file_);
     if (s.ok()) {
@@ -868,7 +870,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     // If we just created a new descriptor file, install it by writing a
     // new CURRENT file that points to it.
     if (s.ok() && !new_manifest_file.empty()) {
-      s = SetCurrentFile(env_, dbname_, manifest_file_number_);
+      s = SetCurrentFile(env_, dbpath_, dbname_, manifest_file_number_);
     }
 
     mu->Lock();

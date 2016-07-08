@@ -164,7 +164,8 @@ class Version {
 
 class VersionSet {
  public:
-  VersionSet(const std::string& dbname,
+  VersionSet(const std::string& dbpath,
+		     const std::string& dbname,
              const Options* options,
              TableCache* table_cache,
              const InternalKeyComparator*);
@@ -295,6 +296,7 @@ class VersionSet {
   void AppendVersion(Version* v);
 
   Env* const env_;
+  const std::string dbpath_;
   const std::string dbname_;
   const Options* const options_;
   TableCache* const table_cache_;

@@ -23,6 +23,7 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/posix_logger.h"
+#include "LogUtil.h"
 
 namespace leveldb {
 
@@ -383,6 +384,7 @@ class PosixEnv : public Env {
   }
 
   virtual Status DeleteFile(const std::string& fname) {
+	  LOGE((std::string("delete file ") + fname).data());
     Status result;
     if (unlink(fname.c_str()) != 0) {
       result = IOError(fname, errno);

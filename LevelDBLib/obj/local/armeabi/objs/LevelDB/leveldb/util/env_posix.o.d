@@ -10,7 +10,8 @@ obj/local/armeabi/objs/LevelDB/./leveldb/util/env_posix.o: \
  jni/leveldb/port/atomic_pointer.h jni/leveldb/util/logging.h \
  jni/leveldb/util/mutexlock.h jni/leveldb/port/thread_annotations.h \
  jni/leveldb/util/posix_logger.h \
- /Users/yanxi/Downloads/android-ndk-r11/sources/cxx-stl/gnu-libstdc++/4.9/include/algorithm
+ /Users/yanxi/Downloads/android-ndk-r11/sources/cxx-stl/gnu-libstdc++/4.9/include/algorithm \
+ jni/LogUtil.h
 
 /Users/yanxi/Downloads/android-ndk-r11/sources/cxx-stl/gnu-libstdc++/4.9/include/deque:
 
@@ -41,3 +42,5 @@ jni/leveldb/port/thread_annotations.h:
 jni/leveldb/util/posix_logger.h:
 
 /Users/yanxi/Downloads/android-ndk-r11/sources/cxx-stl/gnu-libstdc++/4.9/include/algorithm:
+
+jni/LogUtil.h:

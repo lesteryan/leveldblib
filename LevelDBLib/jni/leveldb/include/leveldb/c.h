@@ -138,11 +138,13 @@ extern void leveldb_compact_range(
 
 extern void leveldb_destroy_db(
     const leveldb_options_t* options,
+	const char* path,
     const char* name,
     char** errptr);
 
 extern void leveldb_repair_db(
     const leveldb_options_t* options,
+	const char* path,
     const char* name,
     char** errptr);
 
