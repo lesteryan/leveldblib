@@ -368,7 +368,7 @@ class PosixEnv : public Env {
     return access(fname.c_str(), F_OK) == 0;
   }
 
-  virtual Status GetChildren(const std::string& dir,
+  virtual Status GetChildren(const std::string& dir, const std::string& dbname,
                              std::vector<std::string>* result) {
     result->clear();
     DIR* d = opendir(dir.c_str());
@@ -377,7 +377,11 @@ class PosixEnv : public Env {
     }
     struct dirent* entry;
     while ((entry = readdir(d)) != NULL) {
-      result->push_back(entry->d_name);
+    	if(strncmp(entry->d_name, dbname.data(), dbname.length()) == 0)
+    	{
+    			result->push_back(entry->d_name);
+    			LOGW((std::string("get child -> ") + entry->d_name).data());
+    	}
     }
     closedir(d);
     return Status::OK();

@@ -23,7 +23,7 @@ public:
 	bool open()
 	{
 		myOptions.create_if_missing = true;
-		dbpath = "/sdcard/tmp/leveldb";
+		dbpath = "/sdcard/tmp/leveldb/";
 		dbname = "navi";
 
 		if(kvdb != NULL)
@@ -32,7 +32,7 @@ public:
 		if(kvdb->open() == false)
 			return false;
 
-		status = leveldb::DB::Open(myOptions, dbpath, dbpath, &db);
+		status = leveldb::DB::Open(myOptions, dbpath, dbname, &db);
 
 		LOGE(status.ok() ? "leveldb open success" : "leveldb open failed");
 		if(status.ok() == false)
@@ -85,6 +85,7 @@ public:
 
 		if(!status.ok())
 		{
+			LOGE("insert failed");
 			LOGE(status.ToString().data());
 			return -1;
 		}
@@ -142,6 +143,7 @@ public:
 		else
 		{
 			LOGE("query failed");
+			LOGE(status.ToString().data());
 		}
 
 		timeUtil.stop();

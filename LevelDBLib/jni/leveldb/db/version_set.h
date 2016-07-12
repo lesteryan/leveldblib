@@ -219,11 +219,17 @@ class VersionSet {
   void MarkFileNumberUsed(uint64_t number);
 
   // Return the current log file number.
-  uint64_t LogNumber() const { return log_number_; }
+  uint64_t LogNumber() const
+  {
+	  return log_number_;
+  }
 
   // Return the log file number for the log file that is currently
   // being compacted, or zero if there is no such log file.
-  uint64_t PrevLogNumber() const { return prev_log_number_; }
+  uint64_t PrevLogNumber() const
+  {
+	  return prev_log_number_;
+  }
 
   // Pick level and inputs for a new compaction.
   // Returns NULL if there is no compaction to be done.
@@ -275,7 +281,7 @@ class VersionSet {
   friend class Compaction;
   friend class Version;
 
-  bool ReuseManifest(const std::string& dscname, const std::string& dscbase);
+  bool ReuseManifest(const std::string& dscpath, const std::string& dscname, const std::string& dscbase);
 
   void Finalize(Version* v);
 

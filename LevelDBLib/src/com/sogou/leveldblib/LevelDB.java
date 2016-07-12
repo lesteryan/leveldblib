@@ -7,9 +7,9 @@ public class LevelDB {
 		open();
 		insert();
 		close();
-//		open();
-//		query();
-//		close();
+		open();
+		query();
+		close();
 	}
 	
 	public native boolean open();

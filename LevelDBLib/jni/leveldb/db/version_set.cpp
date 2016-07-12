@@ -17,6 +17,7 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include "LogUtil.h"
 
 namespace leveldb {
 
@@ -811,6 +812,7 @@ void VersionSet::AppendVersion(Version* v) {
 }
 
 Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
+	 LOGE("DescriptorFileName");
   if (edit->has_log_number_) {
     assert(edit->log_number_ >= log_number_);
     assert(edit->log_number_ < next_file_number_);
@@ -841,7 +843,8 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     // No reason to unlock *mu here since we only hit this path in the
     // first call to LogAndApply (when opening the database).
     assert(descriptor_file_ == NULL);
-    new_manifest_file = DescriptorFileName(dbpath_, dbname_);
+
+    new_manifest_file = DescriptorFileName(dbpath_, dbname_, manifest_file_number_);
     edit->SetNextFile(next_file_number_);
     s = env_->NewWritableFile(new_manifest_file, &descriptor_file_);
     if (s.ok()) {
@@ -896,6 +899,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 }
 
 Status VersionSet::Recover(bool *save_manifest) {
+	LOGE("start version recover");
   struct LogReporter : public log::Reader::Reporter {
     Status* status;
     virtual void Corruption(size_t bytes, const Status& s) {
@@ -905,7 +909,7 @@ Status VersionSet::Recover(bool *save_manifest) {
 
   // Read "CURRENT" file, which contains a pointer to the current manifest file
   std::string current;
-  Status s = ReadFileToString(env_, CurrentFileName(dbname_), &current);
+  Status s = ReadFileToString(env_, CurrentFileName(dbpath_, dbname_), &current);
   if (!s.ok()) {
     return s;
   }
@@ -914,9 +918,10 @@ Status VersionSet::Recover(bool *save_manifest) {
   }
   current.resize(current.size() - 1);
 
-  std::string dscname = dbname_ + "/" + current;
+  std::string dscname = dbpath_ + "/" + current;
   SequentialFile* file;
-  s = env_->NewSequentialFile(dscname, &file);	//get MANIFEST file, 可以尝试固定的MANIFEST文件，忽略省去current文件以及log文件
+
+  s = env_->NewSequentialFile(dscname, &file);
   if (!s.ok()) {
     return s;
   }
@@ -930,7 +935,6 @@ Status VersionSet::Recover(bool *save_manifest) {
   uint64_t log_number = 0;
   uint64_t prev_log_number = 0;
   Builder builder(this, current_);
-
   {
     LogReporter reporter;
     reporter.status = &s;
@@ -948,11 +952,9 @@ Status VersionSet::Recover(bool *save_manifest) {
               icmp_.user_comparator()->Name());
         }
       }
-
       if (s.ok()) {
         builder.Apply(&edit);
       }
-
       if (edit.has_log_number_) {
         log_number = edit.log_number_;
         have_log_number = true;
@@ -976,7 +978,6 @@ Status VersionSet::Recover(bool *save_manifest) {
   }
   delete file;
   file = NULL;
-
   if (s.ok()) {
     if (!have_next_file) {
       s = Status::Corruption("no meta-nextfile entry in descriptor");
@@ -993,7 +994,6 @@ Status VersionSet::Recover(bool *save_manifest) {
     MarkFileNumberUsed(prev_log_number);
     MarkFileNumberUsed(log_number);
   }
-
   if (s.ok()) {
     Version* v = new Version(this);
     builder.SaveTo(v);
@@ -1005,9 +1005,8 @@ Status VersionSet::Recover(bool *save_manifest) {
     last_sequence_ = last_sequence;
     log_number_ = log_number;
     prev_log_number_ = prev_log_number;
-
     // See if we can reuse the existing MANIFEST file.
-    if (ReuseManifest(dscname, current)) {
+    if (ReuseManifest(dbpath_, dscname, current)) {
       // No need to save new manifest
     } else {
       *save_manifest = true;
@@ -1017,7 +1016,8 @@ Status VersionSet::Recover(bool *save_manifest) {
   return s;
 }
 
-bool VersionSet::ReuseManifest(const std::string& dscname,
+bool VersionSet::ReuseManifest(const std::string& dscpath,
+		                       const std::string& dscname,
                                const std::string& dscbase) {
   if (!options_->reuse_logs) {
     return false;
@@ -1025,9 +1025,9 @@ bool VersionSet::ReuseManifest(const std::string& dscname,
   FileType manifest_type;
   uint64_t manifest_number;
   uint64_t manifest_size;
-  if (!ParseFileName(dscbase, &manifest_number, &manifest_type) ||
+  if (!ParseFileName(dscpath, dscbase, &manifest_number, &manifest_type) ||
       manifest_type != kDescriptorFile ||
-      !env_->GetFileSize(dscname, &manifest_size).ok() ||
+      !env_->GetFileSize(dbpath_ + dscname, &manifest_size).ok() ||
       // Make new compacted MANIFEST if old one is too big
       manifest_size >= kTargetFileSize) {
     return false;
@@ -1035,7 +1035,7 @@ bool VersionSet::ReuseManifest(const std::string& dscname,
 
   assert(descriptor_file_ == NULL);
   assert(descriptor_log_ == NULL);
-  Status r = env_->NewAppendableFile(dscname, &descriptor_file_);
+  Status r = env_->NewAppendableFile(dbpath_ + dscname, &descriptor_file_);
   if (!r.ok()) {
     Log(options_->info_log, "Reuse MANIFEST: %s\n", r.ToString().c_str());
     assert(descriptor_file_ == NULL);

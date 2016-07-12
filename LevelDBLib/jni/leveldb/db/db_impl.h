@@ -91,7 +91,7 @@ class DBImpl : public DB {
   // Errors are recorded in bg_error_.
   void CompactMemTable() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
+  Status RecoverLogFile(std::string log_name, bool last_log, bool* save_manifest,
                         VersionEdit* edit, SequenceNumber* max_sequence)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -202,7 +202,8 @@ class DBImpl : public DB {
 
 // Sanitize db options.  The caller should delete result.info_log if
 // it is not equal to src.info_log.
-extern Options SanitizeOptions(const std::string& db,
+extern Options SanitizeOptions(const std::string& dbpath,
+		                       const std::string& db,
                                const InternalKeyComparator* icmp,
                                const InternalFilterPolicy* ipolicy,
                                const Options& src);

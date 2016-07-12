@@ -37,7 +37,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
-
+#include "LogUtil.h"
 namespace leveldb {
 
 namespace {
@@ -50,12 +50,12 @@ class Repairer {
         env_(options.env),
         icmp_(options.comparator),
         ipolicy_(options.filter_policy),
-        options_(SanitizeOptions(dbname, &icmp_, &ipolicy_, options)),
+        options_(SanitizeOptions(dbpath, dbname, &icmp_, &ipolicy_, options)),
         owns_info_log_(options_.info_log != options.info_log),
         owns_cache_(options_.block_cache != options.block_cache),
         next_file_number_(1) {
     // TableCache can be small since we expect each table to be opened once.
-    table_cache_ = new TableCache(dbpath_, &options_, 10);
+    table_cache_ = new TableCache(dbpath_, dbname_, &options_, 10);
   }
 
   ~Repairer() {
@@ -117,7 +117,7 @@ class Repairer {
 
   Status FindFiles() {
     std::vector<std::string> filenames;
-    Status status = env_->GetChildren(dbname_, &filenames);
+    Status status = env_->GetChildren(dbpath_, dbname_, &filenames);
     if (!status.ok()) {
       return status;
     }
@@ -128,7 +128,7 @@ class Repairer {
     uint64_t number;
     FileType type;
     for (size_t i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &type)) {
+      if (ParseFileName(dbpath_, filenames[i], &number, &type)) {
         if (type == kDescriptorFile) {
           manifests_.push_back(filenames[i]);
         } else {
@@ -150,7 +150,7 @@ class Repairer {
 
   void ConvertLogFilesToTables() {
     for (size_t i = 0; i < logs_.size(); i++) {
-      std::string logname = LogFileName(dbname_, logs_[i]);
+      std::string logname = LogFileName(dbpath_, dbname_, logs_[i]);
       Status status = ConvertLogToTable(logs_[i]);
       if (!status.ok()) {
         Log(options_.info_log, "Log #%llu: ignoring conversion error: %s",
@@ -176,7 +176,7 @@ class Repairer {
     };
 
     // Open the log file
-    std::string logname = LogFileName(dbname_, log);
+    std::string logname = LogFileName(dbpath_ , dbname_, log);
     SequentialFile* lfile;
     Status status = env_->NewSequentialFile(logname, &lfile);
     if (!status.ok()) {
@@ -226,7 +226,7 @@ class Repairer {
     FileMetaData meta;
     meta.number = next_file_number_++;
     Iterator* iter = mem->NewIterator();
-    status = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
+    status = BuildTable(dbpath_, dbname_, env_, options_, table_cache_, iter, &meta);
     delete iter;
     mem->Unref();
     mem = NULL;
@@ -260,19 +260,19 @@ class Repairer {
   void ScanTable(uint64_t number) {
     TableInfo t;
     t.meta.number = number;
-    std::string fname = TableFileName(dbname_, number);
+    std::string fname = TableFileName(dbpath_, dbname_, number);
     Status status = env_->GetFileSize(fname, &t.meta.file_size);
     if (!status.ok()) {
       // Try alternate file name.
-      fname = SSTTableFileName(dbname_, number);
+      fname = SSTTableFileName(dbpath_, dbname_, number);
       Status s2 = env_->GetFileSize(fname, &t.meta.file_size);
       if (s2.ok()) {
         status = Status::OK();
       }
     }
     if (!status.ok()) {
-      ArchiveFile(TableFileName(dbname_, number));
-      ArchiveFile(SSTTableFileName(dbname_, number));
+      ArchiveFile(TableFileName(dbpath_, dbname_, number));
+      ArchiveFile(SSTTableFileName(dbpath_, dbname_, number));
       Log(options_.info_log, "Table #%llu: dropped: %s",
           (unsigned long long) t.meta.number,
           status.ToString().c_str());
@@ -325,7 +325,7 @@ class Repairer {
     // new table over the source.
 
     // Create builder.
-    std::string copy = TableFileName(dbname_, next_file_number_++);
+    std::string copy = TableFileName(dbpath_, dbname_, next_file_number_++);
     WritableFile* file;
     Status s = env_->NewWritableFile(copy, &file);
     if (!s.ok()) {
@@ -361,7 +361,7 @@ class Repairer {
     file = NULL;
 
     if (counter > 0 && s.ok()) {
-      std::string orig = TableFileName(dbname_, t.meta.number);
+      std::string orig = TableFileName(dbpath_, dbname_, t.meta.number);
       s = env_->RenameFile(copy, orig);
       if (s.ok()) {
         Log(options_.info_log, "Table #%llu: %d entries repaired",
@@ -375,7 +375,8 @@ class Repairer {
   }
 
   Status WriteDescriptor() {
-    std::string tmp = TempFileName(dbname_, 1);
+	  LOGE("WriteDescriptor");
+    std::string tmp = TempFileName(dbpath_, dbname_, 1);
     WritableFile* file;
     Status status = env_->NewWritableFile(tmp, &file);
     if (!status.ok()) {
@@ -423,7 +424,7 @@ class Repairer {
       }
 
       // Install new manifest
-      status = env_->RenameFile(tmp, DescriptorFileName(dbpath_, dbname_));
+      status = env_->RenameFile(tmp, DescriptorFileName(dbpath_, dbname_, 1));
       if (status.ok()) {
         status = SetCurrentFile(env_, dbpath_, dbname_, 1);
       } else {
@@ -434,6 +435,7 @@ class Repairer {
   }
 
   void ArchiveFile(const std::string& fname) {
+	  LOGE("ArchiveFile");
     // Move into another directory.  E.g., for
     //    dir/foo
     // rename to

@@ -281,7 +281,7 @@ void leveldb_destroy_db(
 	const char* path,
     const char* name,
     char** errptr) {
-  SaveError(errptr, DestroyDB(name, options->rep));
+  SaveError(errptr, DestroyDB(path, name, options->rep));
 }
 
 void leveldb_repair_db(

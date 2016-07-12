@@ -90,7 +90,7 @@ class Env {
   // Store in *result the names of the children of the specified directory.
   // The names are relative to "dir".
   // Original contents of *results are dropped.
-  virtual Status GetChildren(const std::string& dir,
+  virtual Status GetChildren(const std::string& dir, const std::string& dbname,
                              std::vector<std::string>* result) = 0;
 
   // Delete the named file.
@@ -308,8 +308,8 @@ class EnvWrapper : public Env {
     return target_->NewAppendableFile(f, r);
   }
   bool FileExists(const std::string& f) { return target_->FileExists(f); }
-  Status GetChildren(const std::string& dir, std::vector<std::string>* r) {
-    return target_->GetChildren(dir, r);
+  Status GetChildren(const std::string& dir,const std::string& dbname, std::vector<std::string>* r) {
+    return target_->GetChildren(dir, dbname,  r);
   }
   Status DeleteFile(const std::string& f) { return target_->DeleteFile(f); }
   Status CreateDir(const std::string& d) { return target_->CreateDir(d); }

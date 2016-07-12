@@ -69,4 +69,54 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
   return (digits > 0);
 }
 
+bool GetFileSuffix(const std::string& filename, std::string& prefix) {
+    size_t dotPos = filename.find_last_of('.');
+    if(dotPos <= 0 || dotPos >= filename.length() - 1)
+        return false;
+
+    prefix = filename.substr(dotPos + 1, filename.length() - 1);
+    return true;
+}
+
+bool GetFileNumber(const std::string& filename, uint64_t* val) {
+	  uint64_t v = 0;
+	  int digits = 0;
+	  int index = filename.find_first_of('.');
+
+	  if(index == std::string::npos)
+	    return false;
+	  index++;
+
+	  std::string fileNumberStr = filename;
+
+	  while (index < fileNumberStr.length()) {
+	    char c = fileNumberStr[index++];
+	    if (c >= '0' && c <= '9') {
+	      ++digits;
+	      const int delta = (c - '0');
+	      static const uint64_t kMaxUint64 = ~static_cast<uint64_t>(0);
+	      if (v > kMaxUint64/10 ||
+	          (v == kMaxUint64/10 && delta > kMaxUint64%10)) {
+	        // Overflow
+	        return false;
+	      }
+	      v = (v * 10) + delta;
+	    } else {
+	      break;
+	    }
+	  }
+	  *val = v;
+	  return (digits > 0);
+	}
+
+//从绝对路径中获得文件名
+bool parseFileName(const std::string& path, std::string& fileName) {
+    size_t slashPos = path.find_last_of('.');
+    if(slashPos <= 0 || slashPos >= path.length() - 1)
+        return false;
+
+    fileName = path.substr(slashPos + 1, path.length() - 1);
+    return true;
+}
+
 }  // namespace leveldb

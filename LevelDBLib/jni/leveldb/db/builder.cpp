@@ -11,10 +11,12 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "LogUtil.h"
 
 namespace leveldb {
 
-Status BuildTable(const std::string& dbname,
+Status BuildTable(const std::string& dbpath,
+		          const std::string& dbname,
                   Env* env,
                   const Options& options,
                   TableCache* table_cache,
@@ -23,8 +25,7 @@ Status BuildTable(const std::string& dbname,
   Status s;
   meta->file_size = 0;
   iter->SeekToFirst();
-
-  std::string fname = TableFileName(dbname, meta->number);
+  std::string fname = TableFileName(dbpath , dbname, meta->number);
   if (iter->Valid()) {
     WritableFile* file;
     s = env->NewWritableFile(fname, &file);
