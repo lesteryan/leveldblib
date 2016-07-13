@@ -141,6 +141,9 @@ struct Options {
   // Default: NULL
   const FilterPolicy* filter_policy;
 
+  bool read_only;
+  bool write_only;
+
   // Create an Options object with default values for all fields.
   Options();
 };

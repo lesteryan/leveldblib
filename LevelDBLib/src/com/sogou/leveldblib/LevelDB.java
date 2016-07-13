@@ -4,9 +4,9 @@ public class LevelDB {
 	
 	public LevelDB()
 	{
-		open();
-		insert();
-		close();
+//		open();
+//		insert();
+//		close();
 		open();
 		query();
 		close();

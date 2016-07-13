@@ -23,6 +23,8 @@ Options::Options()
       block_restart_interval(16),
       compression(kSnappyCompression),
       reuse_logs(false),
+	  read_only(false),
+	  write_only(false),
       filter_policy(NULL) {
 }
 

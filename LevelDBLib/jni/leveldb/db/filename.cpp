@@ -36,6 +36,12 @@ static std::string MakeFileName(const std::string& dbname, uint64_t number, cons
 	return buf;
 }
 
+static std::string MakeFileName(const std::string& dbname, const char* suffix) {
+	char buf[100];
+	snprintf(buf, sizeof(buf), "%s.%s", dbname.data(), suffix);
+	return buf;
+}
+
 std::string LogFileName(const std::string& dbpath, const std::string& dbname,
 		uint64_t number) {
 	assert(number > 0);
@@ -56,11 +62,13 @@ std::string SSTTableFileName(const std::string& dbpath, const std::string& dbnam
 
 std::string DescriptorFileName(const std::string& dbpath,
 		const std::string& dbname, uint64_t number) {
-	return MakeFileName(dbpath, dbname, number, "manifest");
+//	return MakeFileName(dbpath, dbname, number, "manifest");
+	return MakeFileName(dbpath, dbname, "manifest");
 }
 
 std::string DescriptorFileName(const std::string& dbname, uint64_t number) {
-	return MakeFileName(dbname, number, "manifest");
+//	return MakeFileName(dbname, number, "manifest");
+	return MakeFileName(dbname, "manifest");
 }
 
 std::string CurrentFileName(const std::string& dbpath,
@@ -115,16 +123,19 @@ bool ParseFileName(const std::string& dbpath, const std::string& fname, uint64_t
 		*number = 0;
 		*type = kInfoLogFile;
 	} else if (suffix == "manifest") {
-		rest.remove_prefix(fname.find_first_of('.') + 1);
-		uint64_t num;
-		if (!ConsumeDecimalNumber(&rest, &num)) {
-		  return false;
-		}
-		if (rest.empty()) {
-		  return false;
-		}
+//		rest.remove_prefix(fname.find_first_of('.'));
+//		uint64_t num;
+//		if (!ConsumeDecimalNumber(&rest, &num)) {
+//		  return false;
+//		}
+//		if (rest.empty()) {
+//		  return false;
+//		}
+		if((fname.substr(0, fname.find_first_of('.') + 1) + "manifest") != fname)
+			return false;
 		*type = kDescriptorFile;
-		*number = num;
+//		*number = num;
+		*number = 1;
 	} else {
 		// Avoid strtoull() to keep filename format independent of the
 		// current locale
@@ -147,80 +158,25 @@ bool ParseFileName(const std::string& dbpath, const std::string& fname, uint64_t
 	return true;
 }
 
-//bool ParseFileName(const std::string& dbpath, const std::string& fname,
-//		uint64_t* number, FileType* type) {
-//	std::string suffix;
-//	uint64_t tmpNumber;
-//	if (GetFileSuffix(fname, suffix) == false) {
-//		return false;
-//	}
-//
-//	if (suffix == "current") {
-//		*number = 0;
-//		*type = kCurrentFile;
-//	} else if (suffix == "lock") {
-//		*number = 0;
-//		*type = kDBLockFile;
-//	} else if (suffix == "log") {	//log.old
-//		*number = 0;
-//		*type = kLogFile;
-//	} else if (suffix == "old" || suffix == "lg") {
-//		*number = 0;
-//		*type = kInfoLogFile;
-//	} else if (suffix == "manifest") {
-//
-//		*type = kDescriptorFile;
-//		*number = 1;
-//	} else if (suffix == "sst" || suffix == "ldb") {
-//		*type = kTableFile;
-//		*number = 2;
-//	} else if (suffix == "dbtmp") {
-//		*type = kTempFile;
-//		*number = 0;
-//	} else {
-//		return false;
-//	}
-//
-////  } else {
-////    // Avoid strtoull() to keep filename format independent of the
-////    // current locale
-////    uint64_t num;
-////    if (!ConsumeDecimalNumber(&rest, &num)) {
-////      return false;
-////    }
-////    Slice suffix = rest;
-////    if (suffix == Slice(".log")) {
-////      *type = kLogFile;
-////    } else if (suffix == Slice(".sst") || suffix == Slice(".ldb")) {
-////      *type = kTableFile;
-////    } else if (suffix == Slice(".dbtmp")) {
-////      *type = kTempFile;
-////    } else {
-////      return false;
-////    }
-////    *number = num;
-////  }
-//	return true;
-//}
-
 Status SetCurrentFile(Env* env, const std::string& dbpath,
-		const std::string& dbname, uint64_t descriptor_number) {
+		const std::string& dbname, uint64_t descriptor_number) {	//不需要current文件
 	// Remove leading "dbname/" and add newline to manifest file name
-	LOGE("SetCurrentFile");
-	std::string manifest = DescriptorFileName(dbname, descriptor_number);
-	LOGE((std::string("current manifest  ") + manifest).data());
-	Slice contents = manifest;
-//  assert(contents.starts_with(dbname + "/"));
-//  contents.remove_prefix(dbname.size() + 1);
-	std::string tmp = TempFileName(dbpath, dbname, descriptor_number);
-	Status s = WriteStringToFileSync(env, contents.ToString() + "\n", tmp);
-	if (s.ok()) {
-		s = env->RenameFile(tmp, CurrentFileName(dbpath, dbname));
-	}
-	if (!s.ok()) {
-		env->DeleteFile(tmp);
-	}
-	return s;
+//	LOGE("SetCurrentFile");
+//	std::string manifest = DescriptorFileName(dbname, descriptor_number);
+//	LOGE((std::string("current manifest  ") + manifest).data());
+//	Slice contents = manifest;
+////  assert(contents.starts_with(dbname + "/"));
+////  contents.remove_prefix(dbname.size() + 1);
+//	std::string tmp = TempFileName(dbpath, dbname, descriptor_number);
+//	Status s = WriteStringToFileSync(env, contents.ToString() + "\n", tmp);
+//	if (s.ok()) {
+//		s = env->RenameFile(tmp, CurrentFileName(dbpath, dbname));
+//	}
+//	if (!s.ok()) {
+//		env->DeleteFile(tmp);
+//	}
+//	return s;
+	return Status::OK();
 }
 
 }  // namespace leveldb

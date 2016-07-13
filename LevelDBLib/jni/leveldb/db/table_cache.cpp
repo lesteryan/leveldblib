@@ -52,7 +52,6 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
   if (*handle == NULL) {
-	  LOGE("CCC");
     std::string fname = TableFileName(dbpath_, dbname_, file_number);
     RandomAccessFile* file = NULL;
     Table* table = NULL;

@@ -103,12 +103,20 @@ Options SanitizeOptions(const std::string& dbpath, const std::string& dbname,
 	if (result.info_log == NULL) {
 		// Open a log file in the same directory as the db
 		src.env->CreateDir(dbpath);  // In case it does not exist
-		src.env->RenameFile(InfoLogFileName(dbpath, dbname),
-				OldInfoLogFileName(dbpath, dbname));
+//		src.env->RenameFile(InfoLogFileName(dbpath, dbname),
+//				OldInfoLogFileName(dbpath, dbname));
+		src.env->DeleteFile(InfoLogFileName(dbpath, dbname));
+		if(src.read_only == false)//如果只是读，不创建log文件
+		{
 		Status s = src.env->NewLogger(InfoLogFileName(dbpath, dbname),
 				&result.info_log);
 		if (!s.ok()) {
 			// No place suitable for logging
+			result.info_log = NULL;
+		}
+		}
+		else
+		{
 			result.info_log = NULL;
 		}
 	}
@@ -146,6 +154,21 @@ DBImpl::~DBImpl() {
 	// Wait for background work to finish
 	LOGE("start destructor");
 	mutex_.Lock();
+
+	std::vector<std::string> filenames;
+	env_->GetChildren(dbpath_, dbname_, &filenames);
+	FileType type;
+	uint64_t number;
+	for (size_t i = 0; i < filenames.size(); i++) {
+		if (ParseFileName(dbpath_, filenames[i], &number, &type)) {
+			switch (type) {
+			case kInfoLogFile:
+				env_->DeleteFile(dbpath_ + "/" + filenames[i]);
+				break;
+			}
+		}
+	}
+
 	shutting_down_.Release_Store(this);  // Any non-NULL value is ok
 	while (bg_compaction_scheduled_) {
 		bg_cv_.Wait();
@@ -251,7 +274,8 @@ void DBImpl::DeleteObsoleteFiles() {
 			case kDescriptorFile:
 				// Keep my manifest file, and any newer incarnations'
 				// (in case there is a race that allows other incarnations)
-				keep = (number >= versions_->ManifestFileNumber());
+//				keep = (number >= versions_->ManifestFileNumber());
+				keep = number == 1;
 				LOGW(keep ? "keep manifest" : "delete manifest");
 				break;
 			case kTableFile:
@@ -297,9 +321,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 	}
 
 	LOGE("db recover create lock file success");
-
-	LOGE(CurrentFileName(dbpath_, dbname_).data());
-	if (!env_->FileExists(CurrentFileName(dbpath_, dbname_))) {	//通过判断CURRENT文件是否存在判断此处是否存在数据库
+	LOGE(DescriptorFileName(dbpath_, dbname_, 1).data());
+	if (!env_->FileExists(DescriptorFileName(dbpath_, dbname_, 1))) {//通过判断CURRENT文件是否存在判断此处是否存在数据库
 		LOGE("no current file");
 		if (options_.create_if_missing) {
 			LOGE("ready create newdb");
@@ -1210,14 +1233,23 @@ void DBImpl::ReleaseSnapshot(const Snapshot* s) {
 
 // Convenience methods
 Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
+	if (options_.read_only)
+		return Status::NotSupported("read only mode, can not put");
+
 	return DB::Put(o, key, val);
 }
 
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
+	if (options_.read_only)
+		return Status::NotSupported("read only mode, can not delete");
 	return DB::Delete(options, key);
 }
 
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* my_batch) {
+
+	if (options_.read_only)
+		return Status::NotSupported("read only mode, can not wirte");
+
 	Writer w(&mutex_);
 	w.batch = my_batch;
 	w.sync = options.sync;
@@ -1382,21 +1414,31 @@ Status DBImpl::MakeRoomForWrite(bool force) {
 			bg_cv_.Wait();
 		} else {
 			// Attempt to switch to a new memtable and trigger compaction of old
-			assert(versions_->PrevLogNumber() == 0);
-			uint64_t new_log_number = versions_->NewFileNumber();
-			WritableFile* lfile = NULL;
-			s = env_->NewWritableFile(
-					LogFileName(dbpath_, dbname_, new_log_number), &lfile);
-			if (!s.ok()) {
-				// Avoid chewing through file number space in a tight loop.
-				versions_->ReuseFileNumber(new_log_number);
-				break;
+			uint64_t new_log_number;
+			WritableFile* lfile;
+			if (options_.read_only == false) {
+				assert(versions_->PrevLogNumber() == 0);
+				new_log_number = versions_->NewFileNumber();
+				lfile = NULL;
+				s = env_->NewWritableFile(
+						LogFileName(dbpath_, dbname_, new_log_number), &lfile);
+				if (!s.ok()) {
+					// Avoid chewing through file number space in a tight loop.
+					versions_->ReuseFileNumber(new_log_number);
+					break;
+				}
 			}
 			delete log_;
 			delete logfile_;
-			logfile_ = lfile;
-			logfile_number_ = new_log_number;
-			log_ = new log::Writer(lfile);
+			if (options_.read_only == false) {
+				logfile_ = lfile;
+				logfile_number_ = new_log_number;
+				log_ = new log::Writer(lfile);
+			} else {
+				logfile_ = NULL;
+				logfile_number_ = 0;
+				log_ = NULL;
+			}
 			imm_ = mem_;
 			has_imm_.Release_Store(imm_);
 			mem_ = new MemTable(internal_comparator_);
@@ -1517,29 +1559,39 @@ Status DB::Open(const Options& options, const std::string& dbpath,
 		const std::string& dbname, DB** dbptr) {
 	*dbptr = NULL;
 
-//  if(dbpath[dbpath.length - 1] != '\\')
-//	  dbpath.append('\\');
+	if(options.read_only && options.write_only)
+		return Status::InvalidArgument("can not read_only mode both write_only mode");
 
 	DBImpl* impl = new DBImpl(options, dbpath, dbname);
 	impl->mutex_.Lock();
 	VersionEdit edit;
 	// Recover handles create_if_missing, error_if_exists
 	bool save_manifest = false;
+	uint64_t new_log_number;
+	WritableFile* lfile;
 	Status s = impl->Recover(&edit, &save_manifest);
 	if (s.ok())
 		LOGE("recover success");
 	if (s.ok() && impl->mem_ == NULL) {
 		// Create new log and a corresponding memtable.
-		uint64_t new_log_number = impl->versions_->NewFileNumber();
-		WritableFile* lfile;
-		s = options.env->NewWritableFile(
-				LogFileName(dbpath, dbname, new_log_number), &lfile);
 
+		if (options.read_only == false) {
+			new_log_number = impl->versions_->NewFileNumber();
+
+			s = options.env->NewWritableFile(
+					LogFileName(dbpath, dbname, new_log_number), &lfile);
+		}
 		if (s.ok()) {
 			edit.SetLogNumber(new_log_number);
-			impl->logfile_ = lfile;
-			impl->logfile_number_ = new_log_number;
-			impl->log_ = new log::Writer(lfile);
+			if (options.read_only == false) {
+				impl->logfile_ = lfile;
+				impl->logfile_number_ = new_log_number;
+				impl->log_ = new log::Writer(lfile);
+			} else {
+				impl->logfile_ = NULL;
+				impl->logfile_number_ = 0;
+				impl->log_ = NULL;
+			}
 			impl->mem_ = new MemTable(impl->internal_comparator_);
 			impl->mem_->Ref();
 		}
@@ -1549,7 +1601,7 @@ Status DB::Open(const Options& options, const std::string& dbpath,
 		edit.SetLogNumber(impl->logfile_number_);
 		s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
 	}
-	LOGW(s.ok() ? "can be delete" : s.ToString().data());
+
 	if (s.ok()) {
 		impl->DeleteObsoleteFiles();	//对文件编号进行了检查，不对的会删除
 		impl->MaybeScheduleCompaction();

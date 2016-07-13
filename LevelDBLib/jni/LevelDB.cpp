@@ -23,8 +23,9 @@ public:
 	bool open()
 	{
 		myOptions.create_if_missing = true;
+		myOptions.read_only = true;
 		dbpath = "/sdcard/tmp/leveldb/";
-		dbname = "navi";
+		dbname = "beijing";
 
 		if(kvdb != NULL)
 			delete kvdb;
