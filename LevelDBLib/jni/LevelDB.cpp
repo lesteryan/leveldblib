@@ -20,12 +20,14 @@ public:
 		close();
 	}
 
-	bool open()
+	bool open(const char * _dbname, bool read_only, bool write_only)
 	{
 		myOptions.create_if_missing = true;
-		myOptions.read_only = true;
+//		myOptions.reuse_logs = true;
+		myOptions.read_only = read_only;
+		myOptions.write_only = write_only;
 		dbpath = "/sdcard/tmp/leveldb/";
-		dbname = "beijing";
+		dbname = std::string(_dbname);
 
 		if(kvdb != NULL)
 			delete kvdb;
@@ -76,7 +78,7 @@ public:
 //			}
 //		}
 
-		batch.Put("key", "value");
+		batch.Put("SOGOU__", "NAVI__");
 
 //		LOGE("write to batch finished");
 
@@ -96,7 +98,7 @@ public:
 //		sprintf(tmpArray, "insert times = %d", count);
 //		LOGE(tmpArray);
 
-		LOGE("leveldb insert success");
+		LOGI("leveldb insert success");
 
 		return timeUtil.getTime();
 	}
@@ -136,10 +138,10 @@ public:
 //
 //		}
 
-		status = db->Get(leveldb::ReadOptions(), "key", &value);
+		status = db->Get(leveldb::ReadOptions(), "SOGOU__", &value);
 		if(status.ok())
 		{
-			LOGE((std::string("query success ") + value).data());
+			LOGI((std::string("query success ") + value).data());
 		}
 		else
 		{
@@ -174,11 +176,8 @@ public:
 
 	bool reopen()
 	{
-		open();
-		query();
-		close();
 
-		return true;
+		return false;
 	}
 
 //	void test()
@@ -293,13 +292,14 @@ private:
 
 static LevelDB *levelDB = NULL;
 
-extern "C" bool Java_com_sogou_leveldblib_LevelDB_open(JNIEnv* env, jobject thiz)
+extern "C" bool Java_com_sogou_leveldblib_LevelDB_open(JNIEnv* env, jobject thiz, jstring dbname, bool read_only, bool write_only)
 {
+	jboolean iscopy;
 	if(levelDB == NULL)
 		levelDB = new LevelDB();
 
-	return levelDB->open();
-
+	;
+	return levelDB->open(env->GetStringUTFChars(dbname, &iscopy), read_only, write_only);
 }
 
 extern "C" jlong Java_com_sogou_leveldblib_LevelDB_insert(JNIEnv* env, jobject thiz)

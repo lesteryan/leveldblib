@@ -50,8 +50,11 @@ std::string LogFileName(const std::string& dbpath, const std::string& dbname,
 
 std::string TableFileName(const std::string& dbpath, const std::string& dbname,
 		uint64_t number) {
-	assert(number > 0);
-	return MakeFileName(dbpath, dbname, number, "ldb");
+	assert(number >= 0);
+	if(number == DB_NUM_NONE)
+		return MakeFileName(dbpath, dbname, "ldb");
+	else
+		return MakeFileName(dbpath, dbname, number, "ldb");
 }
 
 std::string SSTTableFileName(const std::string& dbpath, const std::string& dbname,

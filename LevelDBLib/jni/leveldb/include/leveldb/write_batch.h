@@ -54,7 +54,7 @@ class WriteBatch {
  private:
   friend class WriteBatchInternal;
 
-  std::string rep_;  // See comment in write_batch.cc for the format of rep_
+  std::string rep_;  // See comment in write_batch.cc for the format of rep_	//所有的数据都在这个字符串中
 
   // Intentionally copyable
 };

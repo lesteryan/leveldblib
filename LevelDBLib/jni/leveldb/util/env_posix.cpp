@@ -33,6 +33,21 @@ static Status IOError(const std::string& context, int err_number) {
   return Status::IOError(context, strerror(err_number));
 }
 
+#ifdef BUILD_HADOOP
+
+class VirtualMemFileSystem
+{
+private:
+	std::hash_map<std::string, std::string> files;
+
+};
+
+
+
+#else
+
+#endif
+
 class PosixSequentialFile: public SequentialFile {
  private:
   std::string filename_;

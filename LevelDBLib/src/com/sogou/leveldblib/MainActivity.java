@@ -33,7 +33,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		{
 		case R.id.button_open:
 		{
-			if(levelDB.open())
+			if(levelDB.open("beijing", false, false))
 				Toast.makeText(this, "open success", Toast.LENGTH_SHORT).show();
 			else
 				Toast.makeText(this, "open failed", Toast.LENGTH_SHORT).show();
