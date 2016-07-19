@@ -17,23 +17,21 @@ using namespace std;
 
 class VirtualMemFile {
 public:
-	VirtualMemFile();
-
 	VirtualMemFile(const std::string& fileName);
 
-	~VirtualMemFile();
+    ~VirtualMemFile();
 
 	std::string getFileName();
 
+    std::string getDirName();
+
 	int getFd();
 
-	void rename(std::string newName);
+	void rename(const std::string& newName);
 
 	bool lockFile();
 
 	bool unlockFile();
-
-	bool lockOrUnlockFile();
 
 	size_t getFileSize();
 
@@ -51,15 +49,19 @@ public:
 
 	bool flush();
 
+	bool static parseFilePath(const std::string& fname, std::string& filePath, std::string& fileName);
+
 	std::string toString();
 
 private:
-	const int _fd;
+    std::string _filePath;
 	std::string _fileName;
 	std::string _fileContent;
-
+	const int _fd;
 	volatile uint64_t _filePos;
-	volatile bool _lock;
+	pthread_mutex_t _mutex;
+
+    bool parseFilePath(const std::string& file);
 };
 
 #endif /* VIRTUALMEMFILE_H_ */

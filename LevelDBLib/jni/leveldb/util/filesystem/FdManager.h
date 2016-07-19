@@ -12,22 +12,12 @@
 
 class FdManager {
 public:
-	FdManager();
-	virtual ~FdManager();
+    FdManager(){}
+    virtual ~FdManager(){}
 
-	static int allocFd() {
-		int fd = 3;
-		while (_fdPool.find(fd) != _fdPool.end())
-			fd++;
+    static int allocFd() ;
 
-		_fdPool.insert(fd);
-
-		return fd;
-	}
-
-	static void recycleFd(int fd) {
-		_fdPool.erase(fd);
-	}
+    static void recycleFd(int fd);
 
 private:
 	static std::set<int> _fdPool;

@@ -13,80 +13,193 @@ VirtualMemFileSystem::VirtualMemFileSystem() {
 }
 
 VirtualMemFileSystem::~VirtualMemFileSystem() {
-	for (std::vector<VirtualMemDir *>::iterator iterator = _dirs.begin();
-			iterator != _dirs.end(); iterator++) {
-		iterator = _dirs.erase(iterator);
+    for (std::vector<VirtualMemFile *>::iterator iterator = _files.begin();
+            iterator != _files.end(); iterator++) {
+        iterator = _files.erase(iterator);
 		delete (*iterator);
 	}
+    _files.clear();
+    _dirs.clear();
 }
 
 void VirtualMemFileSystem::clear() {
 	_dirs.clear();
 }
 
-bool VirtualMemFileSystem::isContain(const std::string& dirName) {
-	for (int i = 0; i < _dirs.size(); i++) {
-		if (_dirs[i]->getDirName() == dirName) {
-			return true;
-		}
-	}
-
-	return false;
+bool VirtualMemFileSystem::isContainDir(const std::string& dirName) {
+    std::string _dirName = formatDir(dirName);
+    std::set<std::string>::iterator iterator = _dirs.find(_dirName);
+    if(iterator == _dirs.end())
+        return false;
+    else
+        return true;
 }
 
-VirtualMemDir* VirtualMemFileSystem::createDir(const std::string& dirName) {
-	if (isContain(dirName))
-		return NULL;
+bool VirtualMemFileSystem::createDir(const std::string& dirName) {
+    std::string _dirName = formatDir(dirName);
+    if (isContainDir(_dirName))
+        return false;
 
-	VirtualMemDir * dir = new VirtualMemDir(dirName);
-	_dirs.push_back(dir);
+    _dirs.insert(_dirName);
 
-	return dir;
-}
-
-VirtualMemDir * VirtualMemFileSystem::getDir(const std::string& dirName) {
-	for (int i = 0; i < _dirs.size(); i++) {
-		if (_dirs[i]->getDirName() == dirName) {
-			return _dirs[i];
-		}
-	}
-
-	return NULL;
+    return true;
 }
 
 bool VirtualMemFileSystem::deleteDir(const std::string& dirName) {
-	if (!isContain(dirName))
-		return false;
+    std::string _dirName = formatDir(dirName);
 
-	for (std::vector<VirtualMemDir *>::iterator iterator = _dirs.begin();
-			iterator != _dirs.end(); iterator++) {
-		if ((*iterator)->getDirName() == dirName) {
-			{
-				iterator = _dirs.erase(iterator);
-				delete (*iterator);
-				break;
-			}
-		}
-	}
+    cout << "files size = " << _files.size() << endl;
 
-	return true;
+    for (std::vector<VirtualMemFile *>::iterator iterator = _files.begin();
+            iterator != _files.end(); ) {
+        if ((*iterator)->getDirName() == dirName) {
+                delete (*iterator);
+                iterator = _files.erase(iterator);
+        }
+        else
+        {
+            iterator++;
+        }
+    }
+
+    std::set<std::string>::iterator iterator = _dirs.find(_dirName);
+    if(iterator == _dirs.end())
+    {
+        return false;
+    }
+    else
+    {
+        _dirs.erase(iterator);
+    }
+
+    return true;
 }
 
 bool VirtualMemFileSystem::getChildrenName(const std::string& dirName,
 		const std::string& dbname, std::vector<std::string>* result) {
 	result->clear();
-	VirtualMemDir *dir;
-	if ((dir = getDir(dirName)) == NULL)
+
+    if(this->isContainDir(dirName) == false)
+        return false;
+
+    std::string _dirName = formatDir(dirName);
+    for(int i = 0 ; i < _files.size() ; i++)
+        if(_files[i]->getDirName() == _dirName)
+            result->push_back(_files[i]->getFileName());
+
+
+	return true;
+}
+
+void VirtualMemFileSystem::renameDir(const std::string& originDirName, const std::string& newDirName) {
+    std::string _originDirName = formatDir(originDirName);
+    std::set<std::string>::iterator iterator = _dirs.find(_originDirName);
+    if(iterator == _dirs.end())
+        return ;
+    else
+    {
+        _dirs.erase(iterator);
+        _dirs.insert(formatDir(newDirName));
+    }
+}
+
+VirtualMemFile* VirtualMemFileSystem::createFile(const std::string& fileName) {
+    VirtualMemFile * file = new VirtualMemFile(fileName);
+
+    _files.push_back(file);
+    _dirs.insert(file->getDirName());
+
+    return file;
+}
+
+bool VirtualMemFileSystem::deleteFile(const std::string& fileName) {
+	std::string _filePath, _fileName;
+	if(VirtualMemFile::parseFilePath(fileName, _filePath, _fileName) == false)
 		return false;
 
-	dir->getChildrenName(dbname, result);
-	return true;
+    for (std::vector<VirtualMemFile *>::iterator iterator = _files.begin();
+            iterator != _files.end(); ) {
+        if ((*iterator)->getDirName()  == _filePath && (*iterator)->getFileName() == _fileName) {
+                delete (*iterator);
+                _files.erase(iterator);
+
+                return true;
+        }
+        else
+        {
+            iterator++;
+        }
+    }
+
+    return false;
+}
+
+VirtualMemFile* VirtualMemFileSystem::getFile(const std::string fileName) {
+	std::string _filePath, _fileName;
+	if(VirtualMemFile::parseFilePath(fileName, _filePath, _fileName) == false)
+		return NULL;
+
+    for (int i = 0; i < _files.size(); i++) {
+        if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == fileName) {
+            return _files[i];
+        }
+    }
+
+    return NULL;
+}
+
+VirtualMemFile* VirtualMemFileSystem::getFile(const int fd) {
+    for (int i = 0; i < _files.size(); i++) {
+        if (_files[i]->getFd() == fd) {
+            return _files[i];
+        }
+    }
+
+    return NULL;
+}
+
+bool VirtualMemFileSystem::isContainFile(const std::string fileName) {
+	std::string _filePath, _fileName;
+	if(VirtualMemFile::parseFilePath(fileName, _filePath, _fileName) == false)
+		return NULL;
+
+    for (int i = 0; i < _files.size(); i++) {
+        if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == fileName)
+            return true;
+    }
+
+    return false;
 }
 
 std::string VirtualMemFileSystem::toString() {
 	std::string buffer;
-	for (int i = 0; i < _dirs.size(); i++)
-		buffer += _dirs[i]->toString() + "\n";
+
+    buffer = "\ndirs:\n";
+
+    for(std::set<std::string >::iterator iterator = _dirs.begin() ; iterator != _dirs.end() ; iterator++)
+        buffer += "\t" + (*iterator) + "\n";
+
+    buffer += "files\n";
+
+    for (int i = 0; i < _files.size(); i++)
+        buffer += _files[i]->toString() + "\n";
 
 	return buffer;
+}
+
+std::string VirtualMemFileSystem::formatDir(const std::string &dir)
+{
+    if(dir.length() <= 1)
+        return std::string();
+
+    std::string _dir = dir;
+
+    for(int i = 0 ; i < _dir.length() ; i++)
+        if(_dir[i] == '\\')
+            _dir[i] = '/';
+
+    if(_dir[_dir.length() - 1] != '/')
+        _dir = _dir + "/";
+
+    return _dir;
 }
