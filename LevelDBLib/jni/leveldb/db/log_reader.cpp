@@ -8,7 +8,7 @@
 #include "leveldb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
-
+#include "LogUtil.h"
 namespace leveldb {
 namespace log {
 
@@ -74,7 +74,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   Slice fragment;
   while (true) {
     const unsigned int record_type = ReadPhysicalRecord(&fragment);
-
+    LOGE("FLAG 77, %u", record_type);
     // ReadPhysicalRecord may have only had an empty trailer remaining in its
     // internal buffer. Calculate the offset of the next physical record now
     // that it has returned, properly accounting for its header size.
@@ -208,6 +208,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
           buffer_.clear();
           ReportDrop(kBlockSize, status);
           eof_ = true;
+          LOGE("FLAG 211");
           return kEof;
         } else if (buffer_.size() < kBlockSize) {
           eof_ = true;
@@ -219,6 +220,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
         // middle of writing the header. Instead of considering this an error,
         // just report EOF.
         buffer_.clear();
+        LOGE("FLAG 223");
         return kEof;
       }
     }
@@ -239,6 +241,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       // If the end of the file has been reached without reading |length| bytes
       // of payload, assume the writer died in the middle of writing the record.
       // Don't report a corruption.
+      LOGE("FLAG 244");
       return kEof;
     }
 
@@ -276,6 +279,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
     }
 
     *result = Slice(header + kHeaderSize, length);
+    LOGE("FLAG 282");
     return type;
   }
 }

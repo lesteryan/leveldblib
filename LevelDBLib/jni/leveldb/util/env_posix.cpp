@@ -25,6 +25,10 @@
 #include "util/posix_logger.h"
 #include "LogUtil.h"
 
+#ifdef BUILD_HADOOP
+#include "filesystem/VirtualMemFileSystem.h"
+#endif
+
 namespace leveldb {
 
 namespace {
@@ -33,161 +37,269 @@ static Status IOError(const std::string& context, int err_number) {
   return Status::IOError(context, strerror(err_number));
 }
 
+static Status IOError(const std::string& context, const std::string& msg) {
+  return Status::IOError(context, msg.data());
+}
+
 #ifdef BUILD_HADOOP
 
-class VirtualMemFileSystem
-{
-private:
-	std::hash_map<std::string, std::string> files;
+	static VirtualMemFileSystem fileSystem;
 
-};
+	class PosixSequentialFile: public SequentialFile {
+	 private:
+	  VirtualMemFile * file_;
 
+	 public:
+	  PosixSequentialFile(VirtualMemFile *file)
+	      : file_(file){ }
+	  virtual ~PosixSequentialFile() {}
 
+	  virtual Status Read(size_t n, Slice* result, char* scratch) {
+		LOGI((file_->getFileName() + " read PosixSequentialFile ").data());
+		LOGI("len = %d", n);
+
+	    Status s;
+	    string str;
+	    if(file_->read(32768, str))
+	    	*result = Slice(str);
+	    else
+	    	s = IOError(file_->getFileName(), file_->getFileName() + "PosixSequentialFile read error");
+
+	    return s;
+	  }
+
+	  virtual Status Skip(uint64_t n) {
+	    if (file_->skip(n)) {
+	      return IOError(file_->getFileName(), file_->getFileName() + "skip error");
+	    }
+	    return Status::OK();
+	  }
+	};
+
+	// pread() based random-access
+	class PosixRandomAccessFile: public RandomAccessFile {
+	 private:
+		VirtualMemFile * file_;
+
+	 public:
+	  PosixRandomAccessFile(VirtualMemFile *file)
+	 : file_(file) { }
+	  virtual ~PosixRandomAccessFile() {}
+
+	  virtual Status Read(uint64_t offset, size_t n, Slice* result,
+	                      char* scratch) const {
+		LOGI((file_->getFileName() + " read PosixRandomAccessFile ").data());
+	    Status s;
+	    string str;
+		if(file_->read(str, offset, n))
+			*result = Slice(str);
+		else
+			s = IOError(file_->getFileName(), file_->getFileName() + "PosixRandomAccessFile read error");
+	    return s;
+	  }
+	};
 
 #else
 
+	class PosixSequentialFile: public SequentialFile {
+	 private:
+	  std::string filename_;
+	  FILE* file_;
+
+	 public:
+	  PosixSequentialFile(const std::string& fname, FILE* f)
+	      : filename_(fname), file_(f) { }
+	  virtual ~PosixSequentialFile() { fclose(file_); }
+
+	  virtual Status Read(size_t n, Slice* result, char* scratch) {
+	    Status s;
+	    size_t r = fread_unlocked(scratch, 1, n, file_);
+	    *result = Slice(scratch, r);
+	    if (r < n) {
+	      if (feof(file_)) {
+	        // We leave status as ok if we hit the end of the file
+	      } else {
+	        // A partial read with an error: return a non-ok status
+	        s = IOError(filename_, errno);
+	      }
+	    }
+	    return s;
+	  }
+
+	  virtual Status Skip(uint64_t n) {
+	    if (fseek(file_, n, SEEK_CUR)) {
+	      return IOError(filename_, errno);
+	    }
+	    return Status::OK();
+	  }
+	};
+
+	// pread() based random-access
+	class PosixRandomAccessFile: public RandomAccessFile {
+	 private:
+	  std::string filename_;
+	  int fd_;
+
+	 public:
+	  PosixRandomAccessFile(const std::string& fname, int fd)
+	      : filename_(fname), fd_(fd) { }
+	  virtual ~PosixRandomAccessFile() { close(fd_); }
+
+	  virtual Status Read(uint64_t offset, size_t n, Slice* result,
+	                      char* scratch) const {
+	    Status s;
+	    ssize_t r = pread(fd_, scratch, n, static_cast<off_t>(offset));
+	    *result = Slice(scratch, (r < 0) ? 0 : r);
+	    if (r < 0) {
+	      // An error: return a non-ok status
+	      s = IOError(filename_, errno);
+	    }
+	    return s;
+	  }
+	};
+
+	// Helper class to limit mmap file usage so that we do not end up
+	// running out virtual memory or running into kernel performance
+	// problems for very large databases.
+	class MmapLimiter {
+	 public:
+	  // Up to 1000 mmaps for 64-bit binaries; none for smaller pointer sizes.
+	  MmapLimiter() {
+	    SetAllowed(sizeof(void*) >= 8 ? 1000 : 0);
+	  }
+
+	  // If another mmap slot is available, acquire it and return true.
+	  // Else return false.
+	  bool Acquire() {
+	    if (GetAllowed() <= 0) {
+	      return false;
+	    }
+	    MutexLock l(&mu_);
+	    intptr_t x = GetAllowed();
+	    if (x <= 0) {
+	      return false;
+	    } else {
+	      SetAllowed(x - 1);
+	      return true;
+	    }
+	  }
+
+	  // Release a slot acquired by a previous call to Acquire() that returned true.
+	  void Release() {
+	    MutexLock l(&mu_);
+	    SetAllowed(GetAllowed() + 1);
+	  }
+
+	 private:
+	  port::Mutex mu_;
+	  port::AtomicPointer allowed_;
+
+	  intptr_t GetAllowed() const {
+	    return reinterpret_cast<intptr_t>(allowed_.Acquire_Load());
+	  }
+
+	  // REQUIRES: mu_ must be held
+	  void SetAllowed(intptr_t v) {
+	    allowed_.Release_Store(reinterpret_cast<void*>(v));
+	  }
+
+	  MmapLimiter(const MmapLimiter&);
+	  void operator=(const MmapLimiter&);
+	};
+
+	// mmap() based random-access
+	class PosixMmapReadableFile: public RandomAccessFile {
+	 private:
+	  std::string filename_;
+	  void* mmapped_region_;
+	  size_t length_;
+	  MmapLimiter* limiter_;
+
+	 public:
+	  // base[0,length-1] contains the mmapped contents of the file.
+	  PosixMmapReadableFile(const std::string& fname, void* base, size_t length,
+	                        MmapLimiter* limiter)
+	      : filename_(fname), mmapped_region_(base), length_(length),
+	        limiter_(limiter) {
+	  }
+
+	  virtual ~PosixMmapReadableFile() {
+	    munmap(mmapped_region_, length_);
+	    limiter_->Release();
+	  }
+
+	  virtual Status Read(uint64_t offset, size_t n, Slice* result,
+	                      char* scratch) const {
+	    Status s;
+	    if (offset + n > length_) {
+	      *result = Slice();
+	      s = IOError(filename_, EINVAL);
+	    } else {
+	      *result = Slice(reinterpret_cast<char*>(mmapped_region_) + offset, n);
+	    }
+	    return s;
+	  }
+	};
 #endif
 
-class PosixSequentialFile: public SequentialFile {
+#ifdef BUILD_HADOOP
+class PosixWritableFile : public WritableFile {
  private:
-  std::string filename_;
-  FILE* file_;
+  VirtualMemFile *_file;
 
  public:
-  PosixSequentialFile(const std::string& fname, FILE* f)
-      : filename_(fname), file_(f) { }
-  virtual ~PosixSequentialFile() { fclose(file_); }
+  PosixWritableFile(VirtualMemFile *file)
+      : _file(file){ }
 
-  virtual Status Read(size_t n, Slice* result, char* scratch) {
-    Status s;
-    size_t r = fread_unlocked(scratch, 1, n, file_);
-    *result = Slice(scratch, r);
-    if (r < n) {
-      if (feof(file_)) {
-        // We leave status as ok if we hit the end of the file
-      } else {
-        // A partial read with an error: return a non-ok status
-        s = IOError(filename_, errno);
-      }
-    }
-    return s;
+  ~PosixWritableFile() {
   }
 
-  virtual Status Skip(uint64_t n) {
-    if (fseek(file_, n, SEEK_CUR)) {
-      return IOError(filename_, errno);
-    }
+  virtual Status Append(const Slice& data) {
+
+	  if(!_file->write(data.ToString(), data.size()))
+		  return IOError(_file->getFileName(), _file->getFileName() + "PosixWritableFile append error");
+	  else
+	  {
+		  LOGI(fileSystem.toString().data());
+		  return Status::OK();
+	  }
+  }
+
+  virtual Status Close() {
+	  _file->close();
+
+	  return Status::OK();
+  }
+
+  virtual Status Flush() {
+    if(_file->flush() == false)
+    	return Status::IOError(_file->getFileName() + " flush failed");
+
     return Status::OK();
   }
-};
 
-// pread() based random-access
-class PosixRandomAccessFile: public RandomAccessFile {
- private:
-  std::string filename_;
-  int fd_;
+  Status SyncDirIfManifest() {
+	  return Status::OK();
+  }
 
- public:
-  PosixRandomAccessFile(const std::string& fname, int fd)
-      : filename_(fname), fd_(fd) { }
-  virtual ~PosixRandomAccessFile() { close(fd_); }
-
-  virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                      char* scratch) const {
-    Status s;
-    ssize_t r = pread(fd_, scratch, n, static_cast<off_t>(offset));
-    *result = Slice(scratch, (r < 0) ? 0 : r);
-    if (r < 0) {
-      // An error: return a non-ok status
-      s = IOError(filename_, errno);
-    }
-    return s;
+  virtual Status Sync() {
+    // Ensure new files referred to by the manifest are in the filesystem.
+	  return Status::OK();
   }
 };
+static int LockOrUnlock(int fd, bool lock) {
+	  VirtualMemFile * file = fileSystem.getFile(fd);
+	  if(file == NULL)
+		  return -1;
 
-// Helper class to limit mmap file usage so that we do not end up
-// running out virtual memory or running into kernel performance
-// problems for very large databases.
-class MmapLimiter {
- public:
-  // Up to 1000 mmaps for 64-bit binaries; none for smaller pointer sizes.
-  MmapLimiter() {
-    SetAllowed(sizeof(void*) >= 8 ? 1000 : 0);
-  }
-
-  // If another mmap slot is available, acquire it and return true.
-  // Else return false.
-  bool Acquire() {
-    if (GetAllowed() <= 0) {
-      return false;
-    }
-    MutexLock l(&mu_);
-    intptr_t x = GetAllowed();
-    if (x <= 0) {
-      return false;
-    } else {
-      SetAllowed(x - 1);
-      return true;
-    }
-  }
-
-  // Release a slot acquired by a previous call to Acquire() that returned true.
-  void Release() {
-    MutexLock l(&mu_);
-    SetAllowed(GetAllowed() + 1);
-  }
-
- private:
-  port::Mutex mu_;
-  port::AtomicPointer allowed_;
-
-  intptr_t GetAllowed() const {
-    return reinterpret_cast<intptr_t>(allowed_.Acquire_Load());
-  }
-
-  // REQUIRES: mu_ must be held
-  void SetAllowed(intptr_t v) {
-    allowed_.Release_Store(reinterpret_cast<void*>(v));
-  }
-
-  MmapLimiter(const MmapLimiter&);
-  void operator=(const MmapLimiter&);
-};
-
-// mmap() based random-access
-class PosixMmapReadableFile: public RandomAccessFile {
- private:
-  std::string filename_;
-  void* mmapped_region_;
-  size_t length_;
-  MmapLimiter* limiter_;
-
- public:
-  // base[0,length-1] contains the mmapped contents of the file.
-  PosixMmapReadableFile(const std::string& fname, void* base, size_t length,
-                        MmapLimiter* limiter)
-      : filename_(fname), mmapped_region_(base), length_(length),
-        limiter_(limiter) {
-  }
-
-  virtual ~PosixMmapReadableFile() {
-    munmap(mmapped_region_, length_);
-    limiter_->Release();
-  }
-
-  virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                      char* scratch) const {
-    Status s;
-    if (offset + n > length_) {
-      *result = Slice();
-      s = IOError(filename_, EINVAL);
-    } else {
-      *result = Slice(reinterpret_cast<char*>(mmapped_region_) + offset, n);
-    }
-    return s;
-  }
-};
-
+	  if(lock && file->lockFile())
+		  return 0;
+	  else if(!lock && file->unlockFile())
+		  return 0;
+	  else
+		  return -1;
+}
+#else
 class PosixWritableFile : public WritableFile {
  private:
   std::string filename_;
@@ -241,7 +353,7 @@ class PosixWritableFile : public WritableFile {
       basename = sep + 1;
     }
     Status s;
-    if (basename.starts_with("MANIFEST")) {
+    if (basename.end_with("manifest")) {
       int fd = open(dir.c_str(), O_RDONLY);
       if (fd < 0) {
         s = IOError(dir, errno);
@@ -279,6 +391,7 @@ static int LockOrUnlock(int fd, bool lock) {
   f.l_len = 0;        // Lock/unlock entire file
   return fcntl(fd, F_SETLK, &f);
 }
+#endif
 
 class PosixFileLock : public FileLock {
  public:
@@ -313,173 +426,295 @@ class PosixEnv : public Env {
     abort();
   }
 
+#ifdef BUILD_HADOOP
   virtual Status NewSequentialFile(const std::string& fname,
-                                   SequentialFile** result) {
-    FILE* f = fopen(fname.c_str(), "r");
-    if (f == NULL) {
+                                     SequentialFile** result) {
+	  VirtualMemFile * file = fileSystem.createFile(fname);
+	  *result = new PosixSequentialFile(file);
+	  return Status::OK();
+    }
+
+    virtual Status NewRandomAccessFile(const std::string& fname,
+                                       RandomAccessFile** result) {
+
+  	  VirtualMemFile * file = fileSystem.createFile(fname);
+  	  *result = new PosixRandomAccessFile(file);
+  	  return Status::OK();
+    }
+
+    virtual Status NewWritableFile(const std::string& fname,
+                                   WritableFile** result) {
+    	  VirtualMemFile * file = fileSystem.createFile(fname);
+    	  *result = new PosixWritableFile(file);
+    	  return Status::OK();
+    }
+
+    virtual Status NewAppendableFile(const std::string& fname,
+                                     WritableFile** result) {
+
+    	VirtualMemFile * file = fileSystem.getFile(fname);
+    	if(file == NULL)
+    		file = fileSystem.createFile(fname);
+		*result = new PosixWritableFile(file);
+		return Status::OK();
+    }
+
+    virtual bool FileExists(const std::string& fname) {
+      return fileSystem.isContainFile(fname);
+    }
+
+    virtual Status GetChildren(const std::string& dir, const std::string& dbname,
+                               std::vector<std::string>* result) {
+    	if(!fileSystem.getChildrenName(dir, dbname, result))
+    		return IOError(dir, dir+ "get child error");
+    	else
+    		return Status::OK();
+    }
+
+    virtual Status DeleteFile(const std::string& fname) {
+    	LOGE((std::string("delete file ") + fname).data());
+		if(!fileSystem.deleteFile(fname))
+			return IOError(fname, fname + "delete error");
+		else
+			return Status::OK();
+    }
+
+    virtual Status CreateDir(const std::string& name) {
+    	if(!fileSystem.createDir(name))
+			return IOError(name, name + "create dir error");
+		else
+			return Status::OK();
+    }
+
+    virtual Status DeleteDir(const std::string& name) {
+    	if(!fileSystem.deleteDir(name))
+			return IOError(name, name + "delete dir error");
+		else
+			return Status::OK();
+    }
+
+    virtual Status GetFileSize(const std::string& fname, uint64_t* size) {
+    	VirtualMemFile* file = fileSystem.getFile(fname);
+    	if(file == NULL)
+			return IOError(fname, fname + "get file size error");
+
+    	*size = file->getFileSize();
+    	return Status::OK();
+    }
+
+    virtual Status RenameFile(const std::string& src, const std::string& target) {
+    	VirtualMemFile* file = fileSystem.getFile(src);
+    	if(file == NULL)
+    		return IOError(src, src + "rename error");
+
+    	file->rename(target);
+		return Status::OK();
+    }
+
+    virtual Status LockFile(const std::string& fname, FileLock** lock) {
+      *lock = NULL;
+      Status result;
+
+      VirtualMemFile *file = fileSystem.getFile(fname);
+      if(file == NULL)
+    	  file = fileSystem.createFile(fname);
+      if (file == NULL) {
+        result = IOError(fname, fname + "create file error");
+      } else if (!locks_.Insert(fname)) {
+        result = Status::IOError("lock " + fname, "already held by process");
+      } else if (LockOrUnlock(file->getFd(), true) == -1) {
+        result = IOError("lock " + fname, fname + "lock file error");
+        locks_.Remove(fname);
+      } else {
+        PosixFileLock* my_lock = new PosixFileLock;
+        my_lock->fd_ = file->getFd();
+        my_lock->name_ = fname;
+        *lock = my_lock;
+      }
+      return result;
+    }
+
+    virtual Status UnlockFile(FileLock* lock) {
+      PosixFileLock* my_lock = reinterpret_cast<PosixFileLock*>(lock);
+      Status result;
+      if (LockOrUnlock(my_lock->fd_, false) == -1) {
+        result = IOError("unlock", "unlock file error");
+      }
+      locks_.Remove(my_lock->name_);
+      delete my_lock;
+      return result;
+    }
+#else
+  virtual Status NewSequentialFile(const std::string& fname,
+                                     SequentialFile** result) {
+      FILE* f = fopen(fname.c_str(), "r");
+      if (f == NULL) {
+        *result = NULL;
+        return IOError(fname, errno);
+      } else {
+        *result = new PosixSequentialFile(fname, f);
+        return Status::OK();
+      }
+    }
+
+    virtual Status NewRandomAccessFile(const std::string& fname,
+                                       RandomAccessFile** result) {
       *result = NULL;
-      return IOError(fname, errno);
-    } else {
-      *result = new PosixSequentialFile(fname, f);
+      Status s;
+      int fd = open(fname.c_str(), O_RDONLY);
+      if (fd < 0) {
+        s = IOError(fname, errno);
+      } else if (mmap_limit_.Acquire()) {
+        uint64_t size;
+        s = GetFileSize(fname, &size);
+        if (s.ok()) {
+          void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+          if (base != MAP_FAILED) {
+            *result = new PosixMmapReadableFile(fname, base, size, &mmap_limit_);
+          } else {
+            s = IOError(fname, errno);
+          }
+        }
+        close(fd);
+        if (!s.ok()) {
+          mmap_limit_.Release();
+        }
+      } else {
+        *result = new PosixRandomAccessFile(fname, fd);
+      }
+      return s;
+    }
+
+    virtual Status NewWritableFile(const std::string& fname,
+                                   WritableFile** result) {
+      Status s;
+      FILE* f = fopen(fname.c_str(), "w");
+      if (f == NULL) {
+        *result = NULL;
+        s = IOError(fname, errno);
+      } else {
+        *result = new PosixWritableFile(fname, f);
+      }
+      return s;
+    }
+
+    virtual Status NewAppendableFile(const std::string& fname,
+                                     WritableFile** result) {
+      Status s;
+      FILE* f = fopen(fname.c_str(), "a");
+      if (f == NULL) {
+        *result = NULL;
+        s = IOError(fname, errno);
+      } else {
+        *result = new PosixWritableFile(fname, f);
+      }
+      return s;
+    }
+
+    virtual bool FileExists(const std::string& fname) {
+      return access(fname.c_str(), F_OK) == 0;
+    }
+
+    virtual Status GetChildren(const std::string& dir, const std::string& dbname,
+                               std::vector<std::string>* result) {
+      result->clear();
+      DIR* d = opendir(dir.c_str());
+      if (d == NULL) {
+        return IOError(dir, errno);
+      }
+      struct dirent* entry;
+      while ((entry = readdir(d)) != NULL) {
+      	if(strncmp(entry->d_name, dbname.data(), dbname.length()) == 0)
+      	{
+      			result->push_back(entry->d_name);
+      			LOGW((std::string("get child -> ") + entry->d_name).data());
+      	}
+      }
+      closedir(d);
       return Status::OK();
     }
-  }
 
-  virtual Status NewRandomAccessFile(const std::string& fname,
-                                     RandomAccessFile** result) {
-    *result = NULL;
-    Status s;
-    int fd = open(fname.c_str(), O_RDONLY);
-    if (fd < 0) {
-      s = IOError(fname, errno);
-    } else if (mmap_limit_.Acquire()) {
-      uint64_t size;
-      s = GetFileSize(fname, &size);
-      if (s.ok()) {
-        void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-        if (base != MAP_FAILED) {
-          *result = new PosixMmapReadableFile(fname, base, size, &mmap_limit_);
-        } else {
-          s = IOError(fname, errno);
-        }
+    virtual Status DeleteFile(const std::string& fname) {
+  	  LOGE((std::string("delete file ") + fname).data());
+      Status result;
+      if (unlink(fname.c_str()) != 0) {
+        result = IOError(fname, errno);
       }
-      close(fd);
-      if (!s.ok()) {
-        mmap_limit_.Release();
+      return result;
+    }
+
+    virtual Status CreateDir(const std::string& name) {
+      Status result;
+      if (mkdir(name.c_str(), 0755) != 0) {
+        result = IOError(name, errno);
       }
-    } else {
-      *result = new PosixRandomAccessFile(fname, fd);
+      return result;
     }
-    return s;
-  }
 
-  virtual Status NewWritableFile(const std::string& fname,
-                                 WritableFile** result) {
-    Status s;
-    FILE* f = fopen(fname.c_str(), "w");
-    if (f == NULL) {
-      *result = NULL;
-      s = IOError(fname, errno);
-    } else {
-      *result = new PosixWritableFile(fname, f);
+    virtual Status DeleteDir(const std::string& name) {
+      Status result;
+      if (rmdir(name.c_str()) != 0) {
+        result = IOError(name, errno);
+      }
+      return result;
     }
-    return s;
-  }
 
-  virtual Status NewAppendableFile(const std::string& fname,
-                                   WritableFile** result) {
-    Status s;
-    FILE* f = fopen(fname.c_str(), "a");
-    if (f == NULL) {
-      *result = NULL;
-      s = IOError(fname, errno);
-    } else {
-      *result = new PosixWritableFile(fname, f);
+    virtual Status GetFileSize(const std::string& fname, uint64_t* size) {
+      Status s;
+      struct stat sbuf;
+      if (stat(fname.c_str(), &sbuf) != 0) {
+        *size = 0;
+        s = IOError(fname, errno);
+      } else {
+        *size = sbuf.st_size;
+      }
+      return s;
     }
-    return s;
-  }
 
-  virtual bool FileExists(const std::string& fname) {
-    return access(fname.c_str(), F_OK) == 0;
-  }
+    virtual Status RenameFile(const std::string& src, const std::string& target) {
+      Status result;
+      if (rename(src.c_str(), target.c_str()) != 0) {
+        result = IOError(src, errno);
+      }
+      return result;
+    }
 
-  virtual Status GetChildren(const std::string& dir, const std::string& dbname,
-                             std::vector<std::string>* result) {
-    result->clear();
-    DIR* d = opendir(dir.c_str());
-    if (d == NULL) {
-      return IOError(dir, errno);
+    virtual Status LockFile(const std::string& fname, FileLock** lock) {
+      *lock = NULL;
+      Status result;
+      int fd = open(fname.c_str(), O_RDWR | O_CREAT, 0644);
+      if (fd < 0) {
+        result = IOError(fname, errno);
+      } else if (!locks_.Insert(fname)) {
+        close(fd);
+        result = Status::IOError("lock " + fname, "already held by process");
+      } else if (LockOrUnlock(fd, true) == -1) {
+        result = IOError("lock " + fname, errno);
+        close(fd);
+        locks_.Remove(fname);
+      } else {
+        PosixFileLock* my_lock = new PosixFileLock;
+        my_lock->fd_ = fd;
+        my_lock->name_ = fname;
+        *lock = my_lock;
+      }
+      return result;
     }
-    struct dirent* entry;
-    while ((entry = readdir(d)) != NULL) {
-    	if(strncmp(entry->d_name, dbname.data(), dbname.length()) == 0)
-    	{
-    			result->push_back(entry->d_name);
-    			LOGW((std::string("get child -> ") + entry->d_name).data());
-    	}
-    }
-    closedir(d);
-    return Status::OK();
-  }
 
-  virtual Status DeleteFile(const std::string& fname) {
-	  LOGE((std::string("delete file ") + fname).data());
-    Status result;
-    if (unlink(fname.c_str()) != 0) {
-      result = IOError(fname, errno);
+    virtual Status UnlockFile(FileLock* lock) {
+      PosixFileLock* my_lock = reinterpret_cast<PosixFileLock*>(lock);
+      Status result;
+      if (LockOrUnlock(my_lock->fd_, false) == -1) {
+        result = IOError("unlock", errno);
+      }
+      locks_.Remove(my_lock->name_);
+      close(my_lock->fd_);
+      delete my_lock;
+      return result;
     }
-    return result;
-  }
+#endif
 
-  virtual Status CreateDir(const std::string& name) {
-    Status result;
-    if (mkdir(name.c_str(), 0755) != 0) {
-      result = IOError(name, errno);
-    }
-    return result;
-  }
 
-  virtual Status DeleteDir(const std::string& name) {
-    Status result;
-    if (rmdir(name.c_str()) != 0) {
-      result = IOError(name, errno);
-    }
-    return result;
-  }
-
-  virtual Status GetFileSize(const std::string& fname, uint64_t* size) {
-    Status s;
-    struct stat sbuf;
-    if (stat(fname.c_str(), &sbuf) != 0) {
-      *size = 0;
-      s = IOError(fname, errno);
-    } else {
-      *size = sbuf.st_size;
-    }
-    return s;
-  }
-
-  virtual Status RenameFile(const std::string& src, const std::string& target) {
-    Status result;
-    if (rename(src.c_str(), target.c_str()) != 0) {
-      result = IOError(src, errno);
-    }
-    return result;
-  }
-
-  virtual Status LockFile(const std::string& fname, FileLock** lock) {
-    *lock = NULL;
-    Status result;
-    int fd = open(fname.c_str(), O_RDWR | O_CREAT, 0644);
-    if (fd < 0) {
-      result = IOError(fname, errno);
-    } else if (!locks_.Insert(fname)) {
-      close(fd);
-      result = Status::IOError("lock " + fname, "already held by process");
-    } else if (LockOrUnlock(fd, true) == -1) {
-      result = IOError("lock " + fname, errno);
-      close(fd);
-      locks_.Remove(fname);
-    } else {
-      PosixFileLock* my_lock = new PosixFileLock;
-      my_lock->fd_ = fd;
-      my_lock->name_ = fname;
-      *lock = my_lock;
-    }
-    return result;
-  }
-
-  virtual Status UnlockFile(FileLock* lock) {
-    PosixFileLock* my_lock = reinterpret_cast<PosixFileLock*>(lock);
-    Status result;
-    if (LockOrUnlock(my_lock->fd_, false) == -1) {
-      result = IOError("unlock", errno);
-    }
-    locks_.Remove(my_lock->name_);
-    close(my_lock->fd_);
-    delete my_lock;
-    return result;
-  }
 
   virtual void Schedule(void (*function)(void*), void* arg);
 
@@ -553,7 +788,10 @@ class PosixEnv : public Env {
   BGQueue queue_;
 
   PosixLockTable locks_;
+
+#ifndef BUILD_HADOOP
   MmapLimiter mmap_limit_;
+#endif
 };
 
 PosixEnv::PosixEnv() : started_bgthread_(false) {

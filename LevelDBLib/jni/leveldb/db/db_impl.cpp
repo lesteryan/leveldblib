@@ -327,8 +327,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 	}
 
 	LOGE("db recover create lock file success");
-	LOGE(DescriptorFileName(dbpath_, dbname_, 1).data());
-	if (!env_->FileExists(DescriptorFileName(dbpath_, dbname_, 1))) {//通过判断CURRENT文件是否存在判断此处是否存在数据库
+	if (!env_->FileExists(DescriptorFileName(dbpath_, dbname_, 1))) {//通过判断manifest文件是否存在判断此处是否存在数据库
 		LOGE("no current file");
 		if (options_.create_if_missing) {
 			LOGE("ready create newdb");

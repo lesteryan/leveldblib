@@ -45,4 +45,8 @@ SOURCES = \
 	./leveldb/util/options.cpp \
 	./leveldb/util/filter_policy.cpp \
 	./leveldb/util/bloom.cpp \
-	./leveldb/port/port_posix.cpp
+	./leveldb/port/port_posix.cpp \
+	./leveldb/util/filesystem/FdManager.cpp \
+	./leveldb/util/filesystem/VirtualMemFile.cpp \
+	./leveldb/util/filesystem/VirtualMemFileSystem.cpp
+	

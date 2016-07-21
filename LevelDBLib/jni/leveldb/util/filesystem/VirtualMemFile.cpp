@@ -7,6 +7,7 @@
 
 #include "VirtualMemFile.h"
 #include "FdManager.h"
+#include "LogUtil.h"
 
 #include <pthread.h>
 using namespace std;
@@ -56,41 +57,50 @@ size_t VirtualMemFile::getFileSize() {
 }
 
 bool VirtualMemFile::skip(uint64_t n) {
+	LOGE("skip");
 	if (_filePos + n >= getFileSize())
-		return false;
-
-	_filePos += n;
+		_filePos = getFileSize() - 1;
+	else
+		_filePos += n;
 	return true;
 }
 
 bool VirtualMemFile::seek(uint64_t n) {
-	if (n > getFileSize())
-		return false;
-
-	_filePos = n;
+	_filePos = n > getFileSize() ? getFileSize() : n;
 	return true;
 }
 
 bool VirtualMemFile::read(size_t len, std::string& result) {
-	if (_filePos + len > getFileSize())
-		return false;
-
+	if(len + _filePos > getFileSize())
+		len = getFileSize() - _filePos;
 	result = _fileContent.substr(_filePos, len);
+
+	LOGI("filecontent len = %d, result len = %d", _fileContent.size(), result.size());
+	LOGI("result len = %d", result.size());
 	_filePos += len;
+
+	if(_filePos >= this->getFileSize())
+		_filePos = this->getFileSize() - 1;
+
+	LOGI("readed len = %d", result.length());
 
 	return true;
 }
 
 bool VirtualMemFile::read(std::string& result, size_t pos, size_t len) {
-	if (pos + len > getFileSize())
-		return false;
-
+//	if (pos + len > getFileSize())
+//		return false;
+	LOGI("write data = %s, size = %d", result.data(), len);
 	result = _fileContent.substr(pos, len);
+	_filePos = pos + len;
+	if(_filePos >= this->getFileSize())
+		_filePos = this->getFileSize() - 1;
 	return true;
 }
 
 bool VirtualMemFile::write(const std::string& result, size_t len) {
-	_fileContent += result;
+	LOGI("write data = %s, size = %d", result.data(), len);
+	_fileContent.append(result.data(), len);
 	_filePos += len;
 
 	return true;
@@ -100,7 +110,8 @@ bool VirtualMemFile::write(size_t pos, size_t len, std::string& result) {
 	if (pos > getFileSize())
 		return false;
 	else if (pos + len > getFileSize()) {
-		_fileContent = _fileContent.substr(0, pos) + result;
+		_fileContent = _fileContent.substr(0, pos);
+		_fileContent.append(result.data(), len);
 		_filePos = pos + len;
 	} else {
 		_fileContent.replace(pos, len, result);
@@ -115,6 +126,7 @@ bool VirtualMemFile::flush() {
 }
 
 std::string VirtualMemFile::toString() {
+	LOGI("toStr %s size = %d, content = %s", _fileName.data(), _fileContent.size(), _fileContent.data());
     return std::string("\tfilePath\t") + _filePath +
            std::string("\tfilename\t") + _fileName +
            std::string("\tfileContent\t") + _fileContent;
@@ -140,4 +152,9 @@ bool VirtualMemFile::parseFilePath(const std::string& fname, std::string& filePa
     filePath = fname.substr(0, lastSep + 1);
     fileName = fname.substr(lastSep + 1, fname.length() - lastSep);
     return true;
+}
+
+void VirtualMemFile::close()
+{
+	_filePos = 0;
 }

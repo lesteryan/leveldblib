@@ -51,6 +51,8 @@ public:
 
 	bool static parseFilePath(const std::string& fname, std::string& filePath, std::string& fileName);
 
+	void close();
+
 	std::string toString();
 
 private:
@@ -58,7 +60,7 @@ private:
 	std::string _fileName;
 	std::string _fileContent;
 	const int _fd;
-	volatile uint64_t _filePos;
+	volatile size_t _filePos;
 	pthread_mutex_t _mutex;
 
     bool parseFilePath(const std::string& file);

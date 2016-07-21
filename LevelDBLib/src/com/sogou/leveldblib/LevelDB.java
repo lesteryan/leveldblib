@@ -12,23 +12,23 @@ public class LevelDB {
 		open("beijing", true, false);
 		query();
 		close();
-		
-		open("tianjin", false, true);
-		insert();
-		close();
-		open("tianjin", false, true);
-		close();
-		open("tianjin", true, false);
-		query();
-		close();
-		
-		open("beijing", true, false);
-		query();
-		close();
-		
-		open("tianjin", true, false);
-		query();
-		close();
+//		
+//		open("tianjin", false, true);
+//		insert();
+//		close();
+//		open("tianjin", false, true);
+//		close();
+//		open("tianjin", true, false);
+//		query();
+//		close();
+//		
+//		open("beijing", true, false);
+//		query();
+//		close();
+//		
+//		open("tianjin", true, false);
+//		query();
+//		close();
 	}
 	
 	public native boolean open(String dbname, boolean read_only, boolean write_only);

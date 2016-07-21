@@ -913,6 +913,7 @@ Status VersionSet::Recover(bool *save_manifest) {
 
 	Status s = env_->NewSequentialFile(dscname, &file);
 	if (!s.ok()) {
+		LOGE("ERROR 916");
 		return s;
 	}
 
@@ -933,6 +934,7 @@ Status VersionSet::Recover(bool *save_manifest) {
 		Slice record;
 		std::string scratch;
 		while (reader.ReadRecord(&record, &scratch) && s.ok()) {
+			LOGE("FLAG 937");
 			VersionEdit edit;
 			s = edit.DecodeFrom(record);
 			if (s.ok()) {
@@ -945,9 +947,13 @@ Status VersionSet::Recover(bool *save_manifest) {
 							icmp_.user_comparator()->Name());
 				}
 			}
+			else
+				LOGE("ERROR 950");
 			if (s.ok()) {
 				builder.Apply(&edit);
 			}
+			else
+				LOGE("ERROR 955");
 			if (edit.has_log_number_) {
 				log_number = edit.log_number_;
 				have_log_number = true;
@@ -988,6 +994,11 @@ Status VersionSet::Recover(bool *save_manifest) {
 		MarkFileNumberUsed(prev_log_number);
 		MarkFileNumberUsed(log_number);
 	}
+	else
+	{
+		LOGE("ERROR 994");
+	}
+
 	if (s.ok()) {
 		Version* v = new Version(this);
 		builder.SaveTo(v);
@@ -1005,6 +1016,14 @@ Status VersionSet::Recover(bool *save_manifest) {
 		} else {
 			*save_manifest = true;
 		}
+	}
+	else
+		LOGE("ERROR 1016");
+
+	if(s.ok() == false)
+	{
+		LOGE("ERROR 1020");
+		LOGE(s.ToString().data());
 	}
 
 	return s;
