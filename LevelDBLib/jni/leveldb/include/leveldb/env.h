@@ -160,6 +160,10 @@ class Env {
   // Sleep/delay the thread for the prescribed number of micro-seconds.
   virtual void SleepForMicroseconds(int micros) = 0;
 
+#ifdef BUILD_HADOOP
+  virtual void CloseAllFile() = 0;
+  virtual void printFileSystem() = 0;
+#endif
  private:
   // No copying allowed
   Env(const Env&);

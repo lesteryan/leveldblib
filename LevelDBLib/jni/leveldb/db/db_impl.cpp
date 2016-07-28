@@ -150,23 +150,30 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbpath,
 
 DBImpl::~DBImpl() {
 	// Wait for background work to finish
-	LOGE("start destructor");
+//	LOGI("start destructor");
 	mutex_.Lock();
 
 	std::vector < std::string > filenames;
 	env_->GetChildren(dbpath_, dbname_, &filenames);
 	FileType type;
 	uint64_t number;
-	for (size_t i = 0; i < filenames.size(); i++) {
-		if (ParseFileName(dbpath_, filenames[i], &number, &type)) {
-			switch (type) {
-			case kInfoLogFile:
-			case kDBLockFile:
-				env_->DeleteFile(dbpath_ + "/" + filenames[i]);
-				break;
+
+	if(options_.read_only)
+	{
+		for (size_t i = 0; i < filenames.size(); i++) {
+			if (ParseFileName(dbpath_, filenames[i], &number, &type)) {
+				switch (type) {
+				case kInfoLogFile:
+				case kDBLockFile:
+					env_->DeleteFile(dbpath_ + "/" + filenames[i]);
+					break;
+				}
 			}
 		}
 	}
+#ifdef BUILD_HADOOP
+	env_->CloseAllFile();
+#endif
 
 	shutting_down_.Release_Store(this);  // Any non-NULL value is ok
 	while (bg_compaction_scheduled_) {
@@ -174,7 +181,7 @@ DBImpl::~DBImpl() {
 	}
 	mutex_.Unlock();
 
-	LOGE(db_lock_ != NULL ? "db_lock_ != NULL" : "db_lock_ == NULL");
+//	LOGE(db_lock_ != NULL ? "db_lock_ != NULL" : "db_lock_ == NULL");
 
 	if (db_lock_ != NULL) {
 		env_->UnlockFile(db_lock_);
@@ -197,8 +204,15 @@ DBImpl::~DBImpl() {
 		delete options_.block_cache;
 	}
 
-	LOGE("db release ok");
+//	LOGE("db release ok");
 }
+
+#ifdef BUILD_HADOOP
+	void DBImpl::printFileSystem()
+	{
+		env_->printFileSystem();
+	}
+#endif
 
 Status DBImpl::NewDB() {
 	VersionEdit new_db;
@@ -208,8 +222,7 @@ Status DBImpl::NewDB() {
 	new_db.SetLastSequence(0);
 
 	const std::string manifest = DescriptorFileName(dbpath_, dbname_, 1);
-	LOGE("create new db");
-	LOGE(manifest.data());
+	LOGI("create new db");
 	WritableFile* file;
 	Status s = env_->NewWritableFile(manifest, &file);
 	if (!s.ok()) {
@@ -223,14 +236,13 @@ Status DBImpl::NewDB() {
 		s = log.AddRecord(record);
 		if (s.ok()) {
 			s = file->Close();
-			LOGE("manifest close");
 		}
 	}
 	delete file;
 	if (s.ok()) {
 		// Make "CURRENT" file that points to the new manifest file.
 		s = SetCurrentFile(env_, dbpath_, dbname_, 1);
-		LOGE("new db create success");
+		LOGI("new db create success");
 	} else {
 		env_->DeleteFile(manifest);
 		LOGE("new db create failed");
@@ -276,6 +288,7 @@ void DBImpl::DeleteObsoleteFiles() {
 						number, versions_->LogNumber(),
 						versions_->PrevLogNumber());
 				LOGE(temp);
+				this->printFileSystem();
 				break;
 			case kDescriptorFile:
 				// Keep my manifest file, and any newer incarnations'
@@ -300,13 +313,14 @@ void DBImpl::DeleteObsoleteFiles() {
 			}
 
 			if (!keep) {
-				LOGW("have file need delete");
-				LOGW(filenames[i].data());
+//				LOGI("have file need delete");
+//				LOGI(filenames[i].data());
 				if (type == kTableFile) {
 					table_cache_->Evict(number);
 				}
 				Log(options_.info_log, "Delete type=%d #%lld\n", int(type),
 						static_cast<unsigned long long>(number));
+				LOGI("open delete file %s", filenames[i].data());
 				env_->DeleteFile(dbpath_ + "/" + filenames[i]);
 			}
 		}
@@ -326,22 +340,22 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 		return s;
 	}
 
-	LOGE("db recover create lock file success");
+	LOGI("db recover create lock file success");
 	if (!env_->FileExists(DescriptorFileName(dbpath_, dbname_, 1))) {//通过判断manifest文件是否存在判断此处是否存在数据库
-		LOGE("no current file");
+		LOGI("no current file");
 		if (options_.create_if_missing) {
-			LOGE("ready create newdb");
+			LOGI("ready create newdb");
 			s = NewDB();
 			if (!s.ok()) {
 				return s;
-				LOGE("new db success");
+				LOGI("new db success");
 			}
 		} else {
 			return Status::InvalidArgument(dbpath_,
 					"does not exist (create_if_missing is false)");
 		}
 	} else {
-		LOGE("found current file");
+		LOGI("found current file");
 		if (options_.error_if_exists) {
 			return Status::InvalidArgument(dbpath_,
 					"exists (error_if_exists is true)");
@@ -354,7 +368,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 		LOGE(s.ToString().data());
 		return s;
 	}
-	LOGE("version recover success");
+	LOGI("version recover success");
 	SequenceNumber max_sequence(0);
 
 	// Recover from all newer log files than the ones named in the
@@ -377,6 +391,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 	uint64_t number;
 	FileType type;
 	std::vector < std::string > logs;
+	LOGI("minLog %lld, prevLog %lld", min_log, prev_log);
 	for (size_t i = 0; i < filenames.size(); i++) {
 		LOGI((filenames[i] + " parsing").data());
 		if (ParseFileName(dbpath_, filenames[i], &number, &type)) {
@@ -384,7 +399,17 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 			if (type == kLogFile
 					&& ((number >= min_log) || (number == prev_log))) {
 				logs.push_back(filenames[i]);
+				LOGI("push %s", filenames[i].data());
+				LOGI("fileName %s, type = %d, number = %lld", filenames[i].data(), type, number);
 			}
+			else
+			{
+				LOGI("fileName %s, type = %d, number = %lld", filenames[i].data(), type, number);
+			}
+		}
+		else
+		{
+			LOGE((filenames[i] + " parse error").data());
 		}
 	}
 	if (!expected.empty()) {
@@ -415,13 +440,14 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 		versions_->SetLastSequence(max_sequence);
 	}
 
-	LOGE("db impl recover success");
+	LOGI("db impl recover success");
 
 	return Status::OK();
 }
 
 Status DBImpl::RecoverLogFile(std::string log_name, bool last_log,
 		bool* save_manifest, VersionEdit* edit, SequenceNumber* max_sequence) {
+	LOGI("recover log file %s", log_name.data());
 	struct LogReporter: public log::Reader::Reporter {
 		Env* env;
 		Logger* info_log;
@@ -440,7 +466,6 @@ Status DBImpl::RecoverLogFile(std::string log_name, bool last_log,
 
 	// Open the log file
 	std::string fname = dbpath_ + "/" + log_name;
-	LOGE(fname.data());
 	SequentialFile* file;
 	Status status = env_->NewSequentialFile(fname, &file);
 	if (!status.ok()) {
@@ -1581,7 +1606,7 @@ Status DB::Open(const Options& options, const std::string& dbpath,
 	WritableFile* lfile;
 	Status s = impl->Recover(&edit, &save_manifest);
 	if (s.ok())
-		LOGE("recover success");
+		LOGI("recover success");
 	if (s.ok() && impl->mem_ == NULL) {
 		// Create new log and a corresponding memtable.
 		new_log_number = impl->versions_->NewFileNumber();

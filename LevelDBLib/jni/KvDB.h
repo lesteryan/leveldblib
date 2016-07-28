@@ -21,7 +21,7 @@ class KvDB
 	bool open()
 	{
 		if(table.open("sdcard/beijing.navi"))
-			LOGE("open smd table success");
+			LOGI("open smd table success");
 		else
 		{
 			LOGE("open smd table failed");
@@ -32,7 +32,7 @@ class KvDB
 		fp = fopen("sdcard/naviindex.txt", "r");
 		if(fp != 0)
 		{
-			LOGE("open index file success");
+			LOGI("open index file success");
 		}
 		else
 		{
@@ -48,40 +48,38 @@ class KvDB
 	//get a record, return index
 	int getRecord(string &data)
 	{
-		LOGE("temp01");
 		if(isOpenSuccess == false)
 		{
 			return -1;
 		}
 		data.clear();
-		LOGE("temp02");
+
 		int index;
 		if(fscanf(fp, "%d", &index) <= 0)
 		{
-			LOGE("read end");
+			LOGW("read end");
 			return -1;
 		}
-		LOGE("temp03");
+
 //		sprintf(tempBuffer, "get reocrd success, index = %d", index);
 //		LOGE(tempBuffer);
 
 
 		kvdbEngine::Record *record = table.search("NaviData", index);
-		LOGE("temp031");
+
 		if(record == 0)
 		{
-			LOGE("temp032");
 			sprintf(tempBuffer, "get index failed, index = %d", index);
 			LOGE(tempBuffer);
 			return -1;
-		}LOGE("temp04");
+		}
 		string temp;
 		for(int i = 0 ; i < 4 ; i++)
 		{
 			if(record->getFieldAsString(i ,temp))
 				data+=temp;
 		}
-		LOGE("temp05");
+
 //		sprintf(tempBuffer, "get reocrd success, index = %d ,size = %d", index, data.size());
 //		LOGE(tempBuffer);
 
@@ -132,7 +130,7 @@ class KvDB
 
 		if(fscanf(fp, "%d", &index) <= 0)
 		{
-			LOGE("read end");
+			LOGW("read end");
 			return -1;
 		}
 
@@ -151,7 +149,7 @@ class KvDB
 
 	~KvDB()
 	{
-		LOGE("kvdb deleted");
+		LOGW("kvdb deleted");
 		if(isOpenSuccess)
 		{
 			table.close();

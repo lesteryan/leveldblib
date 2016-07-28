@@ -13,13 +13,20 @@
 using namespace std;
 
 VirtualMemFile::VirtualMemFile(const std::string& fileName) :
-        _fd(FdManager::allocFd()), _filePos(0), _mutex(PTHREAD_MUTEX_INITIALIZER) {
+        _fd(FdManager::allocFd()), _filePos(0), _fileLength(0),_mutex(PTHREAD_MUTEX_INITIALIZER) {
     parseFilePath(fileName);
+    _fileContent = (char *)malloc(64);
+    _fileLength = 0;
+    _filePos = 0;
 }
 
 VirtualMemFile::~VirtualMemFile(){
     FdManager::recycleFd(this->getFd());
     pthread_mutex_destroy(&_mutex);
+    free(_fileContent);
+    close();
+
+    LOGI("virtual file destuctor");
 }
 
 std::string VirtualMemFile::getFileName() {
@@ -53,68 +60,100 @@ bool VirtualMemFile::unlockFile() {
 }
 
 size_t VirtualMemFile::getFileSize() {
-	return _fileContent.size();
+	return _fileLength;
 }
 
 bool VirtualMemFile::skip(uint64_t n) {
-	LOGE("skip");
+
 	if (_filePos + n >= getFileSize())
-		_filePos = getFileSize() - 1;
+		return false;
 	else
 		_filePos += n;
 	return true;
 }
 
 bool VirtualMemFile::seek(uint64_t n) {
-	_filePos = n > getFileSize() ? getFileSize() : n;
+	if(n >= getFileSize())
+		return false;
+
+	_filePos = n;
 	return true;
 }
 
-bool VirtualMemFile::read(size_t len, std::string& result) {
+size_t VirtualMemFile::read(leveldb::Slice* result, size_t len) {
+	assert(len >= 0);
+//	LOGI("read1 %s filepos = %ld, size = %ld, len = %ld", _fileName.data(), _filePos, _fileLength, len);
 	if(len + _filePos > getFileSize())
 		len = getFileSize() - _filePos;
-	result = _fileContent.substr(_filePos, len);
+	len = len < 0 ? 0 : len;
 
-	LOGI("filecontent len = %d, result len = %d", _fileContent.size(), result.size());
-	LOGI("result len = %d", result.size());
+	*result = leveldb::Slice(_fileContent + _filePos, len);
+
 	_filePos += len;
 
-	if(_filePos >= this->getFileSize())
-		_filePos = this->getFileSize() - 1;
+//	if(result->size() != len)
+//		LOGE("read error 1");
+//	else if(result->size() == 0)
+//		LOGE("read error 3, file pos %d", _filePos);
 
-	LOGI("readed len = %d", result.length());
-
-	return true;
+	return len;
 }
 
-bool VirtualMemFile::read(std::string& result, size_t pos, size_t len) {
-//	if (pos + len > getFileSize())
-//		return false;
-	LOGI("write data = %s, size = %d", result.data(), len);
-	result = _fileContent.substr(pos, len);
+size_t VirtualMemFile::read(leveldb::Slice* result, size_t pos, size_t len) {
+	assert(len >= 0);
+//	LOGI("read2 %s filepos = %d, size = %ld, len = %ld. pos=%ld", _fileName.data(), _filePos, _fileLength, len, pos);
+	if(pos + len > getFileSize())
+	{
+		len = getFileSize() - pos;
+	}
+
+	len = len < 0 ? 0 : len;
+
+	*result = leveldb::Slice(_fileContent + pos, len);
 	_filePos = pos + len;
-	if(_filePos >= this->getFileSize())
-		_filePos = this->getFileSize() - 1;
+
+//	if(result->size() != len)
+//		LOGE("read error 2");
+//	else if(result->size() == 0)
+//		LOGE("read error 4");
+
+	return len;
+}
+
+//append
+bool VirtualMemFile::write(const char * result, size_t len) {
+	assert(len >= 0);
+//	LOGI("write1 %s filepos = %ld, data = %s, size = %ld", _fileName.data(), _filePos, result, len);
+
+	allocMemory(len);
+
+	memcpy(_fileContent + _fileLength, result, len);
+
+	_fileLength += len;
+	_filePos = _fileLength;
+
 	return true;
 }
 
-bool VirtualMemFile::write(const std::string& result, size_t len) {
-	LOGI("write data = %s, size = %d", result.data(), len);
-	_fileContent.append(result.data(), len);
-	_filePos += len;
-
-	return true;
-}
-
-bool VirtualMemFile::write(size_t pos, size_t len, std::string& result) {
+bool VirtualMemFile::write(size_t pos, size_t len, const char * result) {
+	assert(len >= 0);
+//	LOGI("write2 %s filepos = %ld, data = %s, pos = %ld, size = %ld", _fileName.data(), _filePos, result, pos, len);
 	if (pos > getFileSize())
+	{
+		LOGE("error write, pos > fileSize, pos = %d, fileSize = ", pos, getFileSize());
 		return false;
-	else if (pos + len > getFileSize()) {
-		_fileContent = _fileContent.substr(0, pos);
-		_fileContent.append(result.data(), len);
-		_filePos = pos + len;
-	} else {
-		_fileContent.replace(pos, len, result);
+	}
+	else
+	{
+		if(_filePos + len > sizeof(_fileContent))
+			allocMemory(len);
+
+		memcpy(_fileContent + pos, result, len);
+		if(pos + len > getFileSize())
+		{
+			_fileLength = pos + len;
+		}
+
 		_filePos = pos + len;
 	}
 
@@ -126,17 +165,20 @@ bool VirtualMemFile::flush() {
 }
 
 std::string VirtualMemFile::toString() {
-	LOGI("toStr %s size = %d, content = %s", _fileName.data(), _fileContent.size(), _fileContent.data());
-    return std::string("\tfilePath\t") + _filePath +
-           std::string("\tfilename\t") + _fileName +
-           std::string("\tfileContent\t") + _fileContent;
+	char temp[512];
+
+	sprintf(temp, "\tfilePath %s\t fileName %s\t fileSize %d\tfileContent%s", _filePath.data(), _fileName.data(), getFileSize(), _fileContent);
+	return std::string(temp, sizeof(temp));
 }
 
 bool VirtualMemFile::parseFilePath(const std::string& file)
 {
     int lastSep = file.find_last_of('/');
     if(lastSep == std::string::npos)
+    {
+    	LOGE("parse file error, %s", file.data());
         return false;
+    }
 
     this->_filePath = file.substr(0, lastSep + 1);
     this->_fileName = file.substr(lastSep + 1, file.length() - lastSep);
@@ -147,9 +189,16 @@ bool VirtualMemFile::parseFilePath(const std::string& fname, std::string& filePa
 {
     int lastSep = fname.find_last_of('/');
     if(lastSep == std::string::npos)
+    {
+       	LOGE("parse file error, %s", fname.data());
         return false;
+    }
 
-    filePath = fname.substr(0, lastSep + 1);
+    if(fname[lastSep - 1] == '/')
+    	filePath = fname.substr(0, lastSep);
+    else
+    	filePath = fname.substr(0, lastSep + 1);
+
     fileName = fname.substr(lastSep + 1, fname.length() - lastSep);
     return true;
 }
@@ -157,4 +206,26 @@ bool VirtualMemFile::parseFilePath(const std::string& fname, std::string& filePa
 void VirtualMemFile::close()
 {
 	_filePos = 0;
+}
+
+void VirtualMemFile::clean()
+{
+	_filePos = 0;
+	_fileLength = 0;
+	memset(_fileContent, 0 ,sizeof(_fileContent));
+}
+
+void VirtualMemFile::allocMemory(int writeLen)
+{
+	if(getFileSize() + writeLen < sizeof(_fileContent))
+		return;
+
+	int newSize = sizeof(_fileContent) * 2;
+	while(newSize < getFileSize() + writeLen)
+		newSize *= 2;
+
+	char * temp = (char *)malloc(newSize);
+	memcpy(temp, _fileContent, getFileSize());
+	free(_fileContent);
+	_fileContent = temp;
 }

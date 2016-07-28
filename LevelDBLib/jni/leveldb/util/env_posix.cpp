@@ -52,18 +52,17 @@ static Status IOError(const std::string& context, const std::string& msg) {
 	 public:
 	  PosixSequentialFile(VirtualMemFile *file)
 	      : file_(file){ }
-	  virtual ~PosixSequentialFile() {}
+	  virtual ~PosixSequentialFile() {file_->close();}
 
 	  virtual Status Read(size_t n, Slice* result, char* scratch) {
 		LOGI((file_->getFileName() + " read PosixSequentialFile ").data());
-		LOGI("len = %d", n);
 
 	    Status s;
 	    string str;
-	    if(file_->read(32768, str))
-	    	*result = Slice(str);
-	    else
-	    	s = IOError(file_->getFileName(), file_->getFileName() + "PosixSequentialFile read error");
+	    size_t r;
+
+	    LOGI("%s read", file_->getFileName().data());
+	    file_->read(result, n);
 
 	    return s;
 	  }
@@ -84,17 +83,16 @@ static Status IOError(const std::string& context, const std::string& msg) {
 	 public:
 	  PosixRandomAccessFile(VirtualMemFile *file)
 	 : file_(file) { }
-	  virtual ~PosixRandomAccessFile() {}
+	  virtual ~PosixRandomAccessFile() {file_->close();}
 
 	  virtual Status Read(uint64_t offset, size_t n, Slice* result,
 	                      char* scratch) const {
 		LOGI((file_->getFileName() + " read PosixRandomAccessFile ").data());
 	    Status s;
 	    string str;
-		if(file_->read(str, offset, n))
-			*result = Slice(str);
-		else
-			s = IOError(file_->getFileName(), file_->getFileName() + "PosixRandomAccessFile read error");
+	    size_t r;
+
+	    file_->read(result, offset, n);
 	    return s;
 	  }
 	};
@@ -251,16 +249,14 @@ class PosixWritableFile : public WritableFile {
   PosixWritableFile(VirtualMemFile *file)
       : _file(file){ }
 
-  ~PosixWritableFile() {
-  }
+  ~PosixWritableFile() { _file->close(); }
 
   virtual Status Append(const Slice& data) {
 
-	  if(!_file->write(data.ToString(), data.size()))
+	  if(!_file->write(data.data(), data.size()))
 		  return IOError(_file->getFileName(), _file->getFileName() + "PosixWritableFile append error");
 	  else
 	  {
-		  LOGI(fileSystem.toString().data());
 		  return Status::OK();
 	  }
   }
@@ -430,7 +426,9 @@ class PosixEnv : public Env {
   virtual Status NewSequentialFile(const std::string& fname,
                                      SequentialFile** result) {
 	  VirtualMemFile * file = fileSystem.createFile(fname);
+	  file->seek(0);
 	  *result = new PosixSequentialFile(file);
+
 	  return Status::OK();
     }
 
@@ -445,6 +443,7 @@ class PosixEnv : public Env {
     virtual Status NewWritableFile(const std::string& fname,
                                    WritableFile** result) {
     	  VirtualMemFile * file = fileSystem.createFile(fname);
+    	  file->clean();
     	  *result = new PosixWritableFile(file);
     	  return Status::OK();
     }
@@ -452,9 +451,8 @@ class PosixEnv : public Env {
     virtual Status NewAppendableFile(const std::string& fname,
                                      WritableFile** result) {
 
-    	VirtualMemFile * file = fileSystem.getFile(fname);
-    	if(file == NULL)
-    		file = fileSystem.createFile(fname);
+    	VirtualMemFile * file = fileSystem.createFile(fname);
+    	file->seek(file->getFileSize());
 		*result = new PosixWritableFile(file);
 		return Status::OK();
     }
@@ -762,6 +760,11 @@ class PosixEnv : public Env {
     usleep(micros);
   }
 
+#ifdef BUILD_HADOOP
+  virtual void CloseAllFile();
+  virtual void printFileSystem();
+#endif
+
  private:
   void PthreadCall(const char* label, int result) {
     if (result != 0) {
@@ -840,6 +843,20 @@ void PosixEnv::BGThread() {
     (*function)(arg);
   }
 }
+
+#ifdef BUILD_HADOOP
+
+void PosixEnv::CloseAllFile()
+{
+	fileSystem.closeAll();
+}
+
+void PosixEnv::printFileSystem()
+{
+	LOGI(fileSystem.toString().data());
+}
+
+#endif
 
 namespace {
 struct StartThreadState {

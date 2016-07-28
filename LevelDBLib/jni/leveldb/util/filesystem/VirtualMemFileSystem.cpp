@@ -6,13 +6,14 @@
  */
 
 #include "VirtualMemFileSystem.h"
-
+#include "LogUtil.h"
 using namespace std;
 
 VirtualMemFileSystem::VirtualMemFileSystem() {
 }
 
 VirtualMemFileSystem::~VirtualMemFileSystem() {
+	LOGW("VirtualMemFileSystem destructor");
     for (std::vector<VirtualMemFile *>::iterator iterator = _files.begin();
             iterator != _files.end(); iterator++) {
         iterator = _files.erase(iterator);
@@ -23,16 +24,15 @@ VirtualMemFileSystem::~VirtualMemFileSystem() {
 }
 
 void VirtualMemFileSystem::clear() {
+	LOGW("clear file system");
 	_dirs.clear();
 }
 
 bool VirtualMemFileSystem::isContainDir(const std::string& dirName) {
     std::string _dirName = formatDir(dirName);
     std::set<std::string>::iterator iterator = _dirs.find(_dirName);
-    if(iterator == _dirs.end())
-        return false;
-    else
-        return true;
+
+    return iterator != _dirs.end();
 }
 
 bool VirtualMemFileSystem::createDir(const std::string& dirName) {
@@ -47,8 +47,6 @@ bool VirtualMemFileSystem::createDir(const std::string& dirName) {
 
 bool VirtualMemFileSystem::deleteDir(const std::string& dirName) {
     std::string _dirName = formatDir(dirName);
-
-    cout << "files size = " << _files.size() << endl;
 
     for (std::vector<VirtualMemFile *>::iterator iterator = _files.begin();
             iterator != _files.end(); ) {
@@ -67,10 +65,8 @@ bool VirtualMemFileSystem::deleteDir(const std::string& dirName) {
     {
         return false;
     }
-    else
-    {
-        _dirs.erase(iterator);
-    }
+
+    _dirs.erase(iterator);
 
     return true;
 }
@@ -104,6 +100,19 @@ void VirtualMemFileSystem::renameDir(const std::string& originDirName, const std
 }
 
 VirtualMemFile* VirtualMemFileSystem::createFile(const std::string& fileName) {
+	LOGI("create file %s", fileName.data());
+
+	if(this->isContainFile(fileName))
+	{
+		VirtualMemFile* file = getFile(fileName);
+		file->seek(0);
+
+		LOGI("contain %s, needn't create", fileName.data());
+		LOGI(this->toString().data());
+
+		return file;
+	}
+
     VirtualMemFile * file = new VirtualMemFile(fileName);
 
     _files.push_back(file);
@@ -113,6 +122,7 @@ VirtualMemFile* VirtualMemFileSystem::createFile(const std::string& fileName) {
 }
 
 bool VirtualMemFileSystem::deleteFile(const std::string& fileName) {
+	LOGI("delete file %s", fileName.data());
 	std::string _filePath, _fileName;
 	if(VirtualMemFile::parseFilePath(fileName, _filePath, _fileName) == false)
 		return false;
@@ -140,7 +150,7 @@ VirtualMemFile* VirtualMemFileSystem::getFile(const std::string fileName) {
 		return NULL;
 
     for (int i = 0; i < _files.size(); i++) {
-        if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == fileName) {
+        if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == _fileName) {
             return _files[i];
         }
     }
@@ -161,11 +171,15 @@ VirtualMemFile* VirtualMemFileSystem::getFile(const int fd) {
 bool VirtualMemFileSystem::isContainFile(const std::string fileName) {
 	std::string _filePath, _fileName;
 	if(VirtualMemFile::parseFilePath(fileName, _filePath, _fileName) == false)
-		return NULL;
+		return false;
 
+//	LOGI("_file size %d", _files.size());
     for (int i = 0; i < _files.size(); i++) {
-        if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == fileName)
-            return true;
+    	{
+    		LOGI("compare %s %s, %s %s,", _files[i]->getDirName().data() , _filePath.data() , _files[i]->getFileName().data() , _fileName.data());
+			if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == _fileName)
+				return true;
+    	}
     }
 
     return false;
@@ -201,5 +215,17 @@ std::string VirtualMemFileSystem::formatDir(const std::string &dir)
     if(_dir[_dir.length() - 1] != '/')
         _dir = _dir + "/";
 
+    if(_dir[dir.length() - 2] == '/')
+    	_dir = _dir.substr(0, _dir.length() - 1);
+
     return _dir;
+}
+
+void VirtualMemFileSystem::closeAll()
+{
+	for(int i = 0 ; i < _files.size() ; i++)
+	{
+		if(_files[i] != NULL)
+			_files[i]->close();
+	}
 }

@@ -64,6 +64,10 @@ class DBImpl : public DB {
   // bytes.
   void RecordReadSample(Slice key);
 
+#ifdef BUILD_HADOOP
+  virtual void printFileSystem();
+#endif
+
  private:
   friend class DB;
   struct CompactionState;

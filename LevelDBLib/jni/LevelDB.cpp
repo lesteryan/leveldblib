@@ -37,10 +37,12 @@ public:
 
 		status = leveldb::DB::Open(myOptions, dbpath, dbname, &db);
 
-		LOGE(status.ok() ? "leveldb open success" : "leveldb open failed");
+		LOGI(status.ok() ? "leveldb open success" : "leveldb open failed");
 		if(status.ok() == false)
 			LOGE(status.ToString().data());
-
+//#ifdef BUILD_HADOOP
+//		db->printFileSystem();
+//#endif
 		return status.ok();
 	}
 
@@ -53,7 +55,7 @@ public:
 		leveldb::WriteBatch batch;
 		count = 0;
 
-		timeUtil.start();
+		timeUtil.start() ;
 //		LOGE("ready write ti batch");
 //		while((index = kvdb->getRecord(record)) != -1)
 //		{
@@ -100,7 +102,7 @@ public:
 
 		LOGI("leveldb insert success");
 
-		return timeUtil.getTime();
+		return 1;
 	}
 
 	bool clean()
@@ -151,11 +153,16 @@ public:
 
 		timeUtil.stop();
 
-		return timeUtil.getTime();
+		return 1;
 	}
 
 	bool close()
 	{
+		LOGI("ready close db");
+//#ifdef BUILD_HADOOP
+//		if(db != NULL)
+//			db->printFileSystem();
+//#endif
 		if(kvdb != NULL)
 		{
 			delete kvdb;
@@ -169,7 +176,7 @@ public:
 			db = NULL;
 		}
 
-		LOGE("leveldb closed success");
+		LOGI("leveldb closed success");
 
 		return true;
 	}

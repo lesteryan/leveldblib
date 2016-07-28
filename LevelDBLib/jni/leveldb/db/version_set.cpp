@@ -799,7 +799,6 @@ void VersionSet::AppendVersion(Version* v) {
 }
 
 Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
-	LOGE("DescriptorFileName");
 	if (edit->has_log_number_) {
 		assert(edit->log_number_ >= log_number_);
 		assert(edit->log_number_ < next_file_number_);
@@ -888,7 +887,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 }
 
 Status VersionSet::Recover(bool *save_manifest) {
-	LOGE("start version recover");
+	LOGI("start version recover");
 	struct LogReporter: public log::Reader::Reporter {
 		Status* status;
 		virtual void Corruption(size_t bytes, const Status& s) {
@@ -933,11 +932,12 @@ Status VersionSet::Recover(bool *save_manifest) {
 				0/*initial_offset*/);
 		Slice record;
 		std::string scratch;
+		LOGI("FLAG 935");
 		while (reader.ReadRecord(&record, &scratch) && s.ok()) {
-			LOGE("FLAG 937");
 			VersionEdit edit;
+			LOGI("FLAG 937");
 			s = edit.DecodeFrom(record);
-			if (s.ok()) {
+			if (s.ok()) {LOGI("FLAG 939");
 				if (edit.has_comparator_
 						&& edit.comparator_
 								!= icmp_.user_comparator()->Name()) {
@@ -947,13 +947,10 @@ Status VersionSet::Recover(bool *save_manifest) {
 							icmp_.user_comparator()->Name());
 				}
 			}
-			else
-				LOGE("ERROR 950");
 			if (s.ok()) {
 				builder.Apply(&edit);
 			}
-			else
-				LOGE("ERROR 955");
+
 			if (edit.has_log_number_) {
 				log_number = edit.log_number_;
 				have_log_number = true;
@@ -974,6 +971,7 @@ Status VersionSet::Recover(bool *save_manifest) {
 				have_last_sequence = true;
 			}
 		}
+		LOGI("FLAG 973 %s", s.ToString().data());
 	}
 	delete file;
 	file = NULL;
@@ -988,15 +986,12 @@ Status VersionSet::Recover(bool *save_manifest) {
 		}
 
 		if (!have_prev_log_number) {
+			LOGE("!!!!!!!!prevLogNumber %d", prev_log_number);
 			prev_log_number = 0;
 		}
 
 		MarkFileNumberUsed(prev_log_number);
 		MarkFileNumberUsed(log_number);
-	}
-	else
-	{
-		LOGE("ERROR 994");
 	}
 
 	if (s.ok()) {
@@ -1017,12 +1012,10 @@ Status VersionSet::Recover(bool *save_manifest) {
 			*save_manifest = true;
 		}
 	}
-	else
-		LOGE("ERROR 1016");
 
 	if(s.ok() == false)
 	{
-		LOGE("ERROR 1020");
+		LOGE("ERROR 1015");
 		LOGE(s.ToString().data());
 	}
 

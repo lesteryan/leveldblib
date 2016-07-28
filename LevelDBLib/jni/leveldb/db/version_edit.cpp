@@ -6,7 +6,7 @@
 
 #include "db/version_set.h"
 #include "util/coding.h"
-
+#include "LogUtil.h"
 namespace leveldb {
 
 // Tag numbers for serialized VersionEdit.  These numbers are written to
@@ -136,13 +136,16 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         } else {
           msg = "log number";
         }
+        LOGE("log number %lld", log_number_);
         break;
 
       case kPrevLogNumber:
         if (GetVarint64(&input, &prev_log_number_)) {
           has_prev_log_number_ = true;
+          LOGE("pre log number1 %lld", prev_log_number_);
         } else {
           msg = "previous log number";
+          LOGE("pre log number2 %lld", prev_log_number_);
         }
         break;
 
@@ -205,6 +208,7 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   Status result;
   if (msg != NULL) {
     result = Status::Corruption("VersionEdit", msg);
+    LOGI(result.ToString().data());
   }
   return result;
 }

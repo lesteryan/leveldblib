@@ -60,6 +60,7 @@ bool Reader::SkipToInitialBlock() {
 bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   if (last_record_offset_ < initial_offset_) {
     if (!SkipToInitialBlock()) {
+    	LOGI("FLAG 63");
       return false;
     }
   }
@@ -74,7 +75,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   Slice fragment;
   while (true) {
     const unsigned int record_type = ReadPhysicalRecord(&fragment);
-    LOGE("FLAG 77, %u", record_type);
+//    LOGE("FLAG 77, %u", record_type);
     // ReadPhysicalRecord may have only had an empty trailer remaining in its
     // internal buffer. Calculate the offset of the next physical record now
     // that it has returned, properly accounting for its header size.
@@ -156,6 +157,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
           // treat it as a corruption, just ignore the entire logical record.
           scratch->clear();
         }
+        LOGI("FLAG 160");
         return false;
 
       case kBadRecord:
@@ -178,6 +180,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
       }
     }
   }
+  LOGI("FLAG 182");
   return false;
 }
 

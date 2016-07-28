@@ -1,17 +1,21 @@
 package com.sogou.leveldblib;
 
+import android.util.Log;
+
 public class LevelDB {
 	
+	public static final String TAG = "LevelDB Java";
 	public LevelDB()
 	{
-		open("beijing", false, true);
-		insert();
-		close();
-		open("beijing", false, true);
-		close();
-		open("beijing", true, false);
-		query();
-		close();
+		if(open("beijing", false, true) &&
+		insert() > 0&&
+		close() &&
+		open("beijing", false, true) &&
+		close() &&
+		open("beijing", true, false)&&
+		query() > 0 &&
+		close())
+		{}
 //		
 //		open("tianjin", false, true);
 //		insert();

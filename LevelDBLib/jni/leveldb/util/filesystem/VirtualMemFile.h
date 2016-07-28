@@ -12,7 +12,7 @@
 #include <map>
 #include <vector>
 #include <stdlib.h>
-
+#include "leveldb/slice.h"
 using namespace std;
 
 class VirtualMemFile {
@@ -39,13 +39,13 @@ public:
 
 	bool seek(uint64_t n);
 
-	bool read(size_t len, std::string& result);
+	size_t read(leveldb::Slice* result, size_t len);
 
-	bool read(std::string& result, size_t pos, size_t len);
+	size_t read(leveldb::Slice* result, size_t pos, size_t len);
 
-	bool write(const std::string& result, size_t len);
+	bool write(const char* result, size_t len);
 
-	bool write(size_t pos, size_t len, std::string& result);
+	bool write(size_t pos, size_t len, const char * result);
 
 	bool flush();
 
@@ -53,17 +53,23 @@ public:
 
 	void close();
 
+	void clean();
+
 	std::string toString();
 
 private:
     std::string _filePath;
 	std::string _fileName;
-	std::string _fileContent;
+//	std::string _fileContent;
+	char * _fileContent;
+	size_t _fileLength;
 	const int _fd;
-	volatile size_t _filePos;
+	size_t _filePos;
 	pthread_mutex_t _mutex;
 
     bool parseFilePath(const std::string& file);
+
+    void allocMemory(int writeLen);
 };
 
 #endif /* VIRTUALMEMFILE_H_ */

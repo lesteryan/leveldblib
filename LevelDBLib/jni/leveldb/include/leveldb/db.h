@@ -143,6 +143,10 @@ class DB {
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
 
+#ifdef BUILD_HADOOP
+  virtual void printFileSystem() = 0;
+#endif
+
  private:
   // No copying allowed
   DB(const DB&);

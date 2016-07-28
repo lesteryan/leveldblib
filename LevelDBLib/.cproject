@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
-		<cconfiguration id="com.android.toolchain.gcc.1994431760">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.android.toolchain.gcc.1994431760" moduleId="org.eclipse.cdt.core.settings" name="Default">
+		<cconfiguration id="com.android.toolchain.gcc.706752741">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.android.toolchain.gcc.706752741" moduleId="org.eclipse.cdt.core.settings" name="Default">
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -16,18 +16,18 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildProperties="" description="" id="com.android.toolchain.gcc.1994431760" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="com.android.toolchain.gcc.1994431760.1537061143" name="/" resourcePath="">
-						<toolChain id="com.android.toolchain.gcc.1627367272" name="Android GCC" superClass="com.android.toolchain.gcc">
-							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF" id="com.android.targetPlatform.540233492" isAbstract="false" superClass="com.android.targetPlatform"/>
-							<builder id="com.android.builder.277592159" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Android Builder" superClass="com.android.builder">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="com.android.toolchain.gcc.706752741" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="com.android.toolchain.gcc.706752741.287541574" name="/" resourcePath="">
+						<toolChain id="com.android.toolchain.gcc.1335926015" name="Android GCC" superClass="com.android.toolchain.gcc">
+							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF" id="com.android.targetPlatform.59675576" isAbstract="false" superClass="com.android.targetPlatform"/>
+							<builder id="com.android.builder.787344974" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Android Builder" superClass="com.android.builder">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="obj"/>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="libs"/>
 								</outputEntries>
 							</builder>
-							<tool id="com.android.gcc.compiler.872506011" name="Android GCC Compiler" superClass="com.android.gcc.compiler">
-								<inputType id="com.android.gcc.inputType.1271238671" superClass="com.android.gcc.inputType"/>
+							<tool id="com.android.gcc.compiler.31042663" name="Android GCC Compiler" superClass="com.android.gcc.compiler">
+								<inputType id="com.android.gcc.inputType.1949142825" superClass="com.android.gcc.inputType"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -40,12 +40,15 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="LevelDBLib.null.108715575" name="LevelDBLib"/>
+		<project id="LevelDBLib.null.1540773757" name="LevelDBLib"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="com.android.toolchain.gcc.148646186;com.android.toolchain.gcc.148646186.1566391519;com.android.gcc.compiler.1117057580;com.android.gcc.inputType.1991779704">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.android.AndroidPerProjectProfile"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.android.toolchain.gcc.706752741;com.android.toolchain.gcc.706752741.287541574;com.android.gcc.compiler.31042663;com.android.gcc.inputType.1949142825">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.android.AndroidPerProjectProfile"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.android.toolchain.gcc.1994431760;com.android.toolchain.gcc.1994431760.1537061143;com.android.gcc.compiler.872506011;com.android.gcc.inputType.1271238671">
