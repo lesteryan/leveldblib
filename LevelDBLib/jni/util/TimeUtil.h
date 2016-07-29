@@ -5,8 +5,8 @@
  *      Author: lt_dan
  */
 
-#ifndef TIMEUTIL_H_
-#define TIMEUTIL_H_
+#ifndef UTIL_TIMEUTIL_H_
+#define UTIL_TIMEUTIL_H_
 
 #include <time.h>
 #include <string>
@@ -41,4 +41,4 @@ private:
 };
 
 
-#endif /* TIMEUTIL_H_ */
+#endif /* UTIL_TIMEUTIL_H_ */

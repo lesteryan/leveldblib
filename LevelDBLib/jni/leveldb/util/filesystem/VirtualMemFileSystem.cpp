@@ -5,8 +5,8 @@
  *      Author: yanxi
  */
 
+#include <util/LogUtil.h>
 #include "VirtualMemFileSystem.h"
-#include "LogUtil.h"
 using namespace std;
 
 VirtualMemFileSystem::VirtualMemFileSystem() {
@@ -108,7 +108,6 @@ VirtualMemFile* VirtualMemFileSystem::createFile(const std::string& fileName) {
 		file->seek(0);
 
 		LOGI("contain %s, needn't create", fileName.data());
-		LOGI(this->toString().data());
 
 		return file;
 	}
@@ -176,7 +175,7 @@ bool VirtualMemFileSystem::isContainFile(const std::string fileName) {
 //	LOGI("_file size %d", _files.size());
     for (int i = 0; i < _files.size(); i++) {
     	{
-    		LOGI("compare %s %s, %s %s,", _files[i]->getDirName().data() , _filePath.data() , _files[i]->getFileName().data() , _fileName.data());
+//    		LOGI("compare %s %s, %s %s,", _files[i]->getDirName().data() , _filePath.data() , _files[i]->getFileName().data() , _fileName.data());
 			if (_files[i]->getDirName() == _filePath && _files[i]->getFileName() == _fileName)
 				return true;
     	}
@@ -228,4 +227,9 @@ void VirtualMemFileSystem::closeAll()
 		if(_files[i] != NULL)
 			_files[i]->close();
 	}
+}
+
+std::vector<VirtualMemFile *> VirtualMemFileSystem::getAllFile()
+{
+	return _files;
 }

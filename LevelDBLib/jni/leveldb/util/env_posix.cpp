@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <util/LogUtil.h>
 #include <deque>
 #include <set>
 #include "leveldb/env.h"
@@ -23,7 +24,6 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/posix_logger.h"
-#include "LogUtil.h"
 
 #ifdef BUILD_HADOOP
 #include "filesystem/VirtualMemFileSystem.h"
@@ -763,6 +763,7 @@ class PosixEnv : public Env {
 #ifdef BUILD_HADOOP
   virtual void CloseAllFile();
   virtual void printFileSystem();
+  virtual std::vector<VirtualMemFile *> getFiles();
 #endif
 
  private:
@@ -854,6 +855,11 @@ void PosixEnv::CloseAllFile()
 void PosixEnv::printFileSystem()
 {
 	LOGI(fileSystem.toString().data());
+}
+
+std::vector<VirtualMemFile *> PosixEnv::getFiles()
+{
+	return fileSystem.getAllFile();
 }
 
 #endif

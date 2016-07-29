@@ -7,9 +7,8 @@
 
 #include "VirtualMemFile.h"
 #include "FdManager.h"
-#include "LogUtil.h"
-
 #include <pthread.h>
+#include <util/LogUtil.h>
 using namespace std;
 
 VirtualMemFile::VirtualMemFile(const std::string& fileName) :

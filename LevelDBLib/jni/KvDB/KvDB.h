@@ -1,13 +1,12 @@
-#ifndef KVDB_H_
-#define KVDB_H_
+#ifndef KVDB_KVDB_H_
+#define KVDB_KVDB_H_
 
 #include "SMDSStorage.h"
 #include "Record.h"
 #include "TableDef.h"
-#include "LogUtil.h"
 #include <vector>
 #include <stdio.h>
-
+#include <util/LogUtil.h>
 
 class KvDB
 {
@@ -18,9 +17,9 @@ class KvDB
 		fp = NULL;
 	}
 
-	bool open()
+	bool open(const char *dbPath, const char * indexPath)
 	{
-		if(table.open("sdcard/beijing.navi"))
+		if(table.open(dbPath))
 			LOGI("open smd table success");
 		else
 		{
@@ -29,7 +28,7 @@ class KvDB
 		}
 
 		int count;
-		fp = fopen("sdcard/naviindex.txt", "r");
+		fp = fopen(indexPath, "r");
 		if(fp != 0)
 		{
 			LOGI("open index file success");
@@ -45,25 +44,20 @@ class KvDB
 		return true;
 	}
 
-	//get a record, return index
-	int getRecord(string &data)
+	//get a record and index
+	bool getRecord(int& index, string &data)
 	{
 		if(isOpenSuccess == false)
 		{
-			return -1;
+			return false;
 		}
 		data.clear();
 
-		int index;
 		if(fscanf(fp, "%d", &index) <= 0)
 		{
 			LOGW("read end");
-			return -1;
+			return false;
 		}
-
-//		sprintf(tempBuffer, "get reocrd success, index = %d", index);
-//		LOGE(tempBuffer);
-
 
 		kvdbEngine::Record *record = table.search("NaviData", index);
 
@@ -71,36 +65,25 @@ class KvDB
 		{
 			sprintf(tempBuffer, "get index failed, index = %d", index);
 			LOGE(tempBuffer);
-			return -1;
+			return false;
 		}
 		string temp;
-		for(int i = 0 ; i < 4 ; i++)
+		for(int i = 0 ; i < 5 ; i++)
 		{
 			if(record->getFieldAsString(i ,temp))
 				data+=temp;
 		}
 
-//		sprintf(tempBuffer, "get reocrd success, index = %d ,size = %d", index, data.size());
-//		LOGE(tempBuffer);
-
-		readedIndex.push_back(index);
 		return index;
 	}
 
 	//get record by index
-	bool getRecord(int index, string &data)
+	bool getRecord(const int index, string &data)
 	{
 		if(isOpenSuccess == false)
 			return false;
 
 		data.clear();
-
-//		int index;
-//		fscanf(fp, "%d", &index);
-
-//		sprintf(temp, "get index success, index = %d", index);
-//		LOGE(temp);
-
 
 		kvdbEngine::Record *record = table.search("NaviData", index);
 		if(record == 0)
@@ -116,35 +99,7 @@ class KvDB
 				data.append(temp);
 		}
 
-//		readedIndex.push_back(index);
 		return index;
-	}
-
-	int getRandomIndex()	//随机获得一个曾经read过的index
-	{
-		if(readedIndex.size() != 0)
-
-			return readedIndex[random() % readedIndex.size()];
-
-		int index;
-
-		if(fscanf(fp, "%d", &index) <= 0)
-		{
-			LOGW("read end");
-			return -1;
-		}
-
-		return index;
-	}
-
-	vector<int> getAllReadedIndex()
-	{
-		return readedIndex;
-	}
-
-	void setReadedIndex(vector<int> readedIndex)
-	{
-		this->readedIndex = readedIndex;
 	}
 
 	~KvDB()
@@ -163,8 +118,6 @@ private:
 	FILE *fp;
 	bool isOpenSuccess;
 	char tempBuffer[255];
-	vector<int> readedIndex;
-
 };
 
 #endif

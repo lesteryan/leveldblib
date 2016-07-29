@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include "leveldb/status.h"
 
+#ifdef BUILD_HADOOP
+#include "leveldb/util/fileSystem/VirtualMemFile.h"
+#endif
+
 namespace leveldb {
 
 class FileLock;
@@ -163,6 +167,7 @@ class Env {
 #ifdef BUILD_HADOOP
   virtual void CloseAllFile() = 0;
   virtual void printFileSystem() = 0;
+  virtual std::vector<VirtualMemFile *> getFiles() = 0;
 #endif
  private:
   // No copying allowed

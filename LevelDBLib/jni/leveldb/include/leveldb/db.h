@@ -7,8 +7,13 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <vector>
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
+
+#ifdef BUILD_HADOOP
+#include "leveldb/util/filesystem/VirtualMemFile.h"
+#endif
 
 namespace leveldb {
 
@@ -145,6 +150,7 @@ class DB {
 
 #ifdef BUILD_HADOOP
   virtual void printFileSystem() = 0;
+  virtual std::vector<VirtualMemFile *> getFiles() = 0;
 #endif
 
  private:

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <stdio.h>
+#include <util/LogUtil.h>
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -17,7 +18,6 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
-#include "LogUtil.h"
 
 namespace leveldb {
 
@@ -932,12 +932,10 @@ Status VersionSet::Recover(bool *save_manifest) {
 				0/*initial_offset*/);
 		Slice record;
 		std::string scratch;
-		LOGI("FLAG 935");
 		while (reader.ReadRecord(&record, &scratch) && s.ok()) {
 			VersionEdit edit;
-			LOGI("FLAG 937");
 			s = edit.DecodeFrom(record);
-			if (s.ok()) {LOGI("FLAG 939");
+			if (s.ok()) {
 				if (edit.has_comparator_
 						&& edit.comparator_
 								!= icmp_.user_comparator()->Name()) {
@@ -971,7 +969,6 @@ Status VersionSet::Recover(bool *save_manifest) {
 				have_last_sequence = true;
 			}
 		}
-		LOGI("FLAG 973 %s", s.ToString().data());
 	}
 	delete file;
 	file = NULL;

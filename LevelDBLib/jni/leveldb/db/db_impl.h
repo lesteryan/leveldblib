@@ -66,6 +66,7 @@ class DBImpl : public DB {
 
 #ifdef BUILD_HADOOP
   virtual void printFileSystem();
+  virtual std::vector<VirtualMemFile *> getFiles();
 #endif
 
  private:

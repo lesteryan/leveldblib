@@ -9,6 +9,7 @@
 #include <string>
 #include <stdint.h>
 #include <stdio.h>
+#include <util/LogUtil.h>
 #include <vector>
 #include "db/builder.h"
 #include "db/db_iter.h"
@@ -32,7 +33,6 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-#include "LogUtil.h"
 
 namespace leveldb {
 
@@ -212,6 +212,11 @@ DBImpl::~DBImpl() {
 	{
 		env_->printFileSystem();
 	}
+
+	std::vector<VirtualMemFile *> DBImpl::getFiles()
+	{
+		return env_->getFiles();
+	}
 #endif
 
 Status DBImpl::NewDB() {
@@ -281,14 +286,14 @@ void DBImpl::DeleteObsoleteFiles() {
 			case kLogFile:
 				keep = ((number >= versions_->LogNumber())
 						|| (number == versions_->PrevLogNumber()));
-				LOGE(keep ? "keep log file" : "delete, have log file");
-				char temp[255];
-				sprintf(temp,
-						"number = %06llu, logNumber = %06llu, prelogNumber = %06llu",
-						number, versions_->LogNumber(),
-						versions_->PrevLogNumber());
-				LOGE(temp);
-				this->printFileSystem();
+//				LOGE(keep ? "keep log file" : "delete, have log file");
+//				char temp[255];
+//				sprintf(temp,
+//						"number = %06llu, logNumber = %06llu, prelogNumber = %06llu",
+//						number, versions_->LogNumber(),
+//						versions_->PrevLogNumber());
+//				LOGE(temp);
+//				this->printFileSystem();
 				break;
 			case kDescriptorFile:
 				// Keep my manifest file, and any newer incarnations'

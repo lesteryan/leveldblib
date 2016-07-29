@@ -50,6 +50,8 @@ public:
     void getChildrenName(const std::string& dbname,
             std::vector<std::string>* result);
 
+    std::vector<VirtualMemFile *> getAllFile();
+
     void closeAll();
 
 	std::string toString();

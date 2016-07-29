@@ -48,5 +48,6 @@ SOURCES = \
 	./leveldb/port/port_posix.cpp \
 	./leveldb/util/filesystem/FdManager.cpp \
 	./leveldb/util/filesystem/VirtualMemFile.cpp \
-	./leveldb/util/filesystem/VirtualMemFileSystem.cpp
+	./leveldb/util/filesystem/VirtualMemFileSystem.cpp \
+	./leveldb/LevelDB.cpp
 	
