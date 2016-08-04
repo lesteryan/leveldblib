@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <util/LogUtil.h>
 #include "db/version_edit.h"
 
 #include "db/version_set.h"
@@ -136,16 +135,13 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         } else {
           msg = "log number";
         }
-        LOGE("log number %lld", log_number_);
         break;
 
       case kPrevLogNumber:
         if (GetVarint64(&input, &prev_log_number_)) {
           has_prev_log_number_ = true;
-          LOGE("pre log number1 %lld", prev_log_number_);
         } else {
           msg = "previous log number";
-          LOGE("pre log number2 %lld", prev_log_number_);
         }
         break;
 
@@ -208,7 +204,6 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   Status result;
   if (msg != NULL) {
     result = Status::Corruption("VersionEdit", msg);
-    LOGI(result.ToString().data());
   }
   return result;
 }

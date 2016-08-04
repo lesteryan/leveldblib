@@ -49,8 +49,6 @@ public:
 
 	bool flush();
 
-	bool static parseFilePath(const std::string& fname, std::string& filePath, std::string& fileName);
-
 	void close();
 
 	void clean();
@@ -66,8 +64,6 @@ private:
 	const int _fd;
 	size_t _filePos;
 	pthread_mutex_t _mutex;
-
-    bool parseFilePath(const std::string& file);
 
     void allocMemory(int writeLen);
 };

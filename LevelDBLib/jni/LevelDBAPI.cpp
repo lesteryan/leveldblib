@@ -53,7 +53,7 @@ extern "C" void Java_com_sogou_leveldblib_LevelDB_test(JNIEnv* env, jobject thiz
 	Status statue;
 
 	KvDB kvdb;
-	ret = kvdb.open("/sdcard/beijing.navi", "sdcard/naviindex.txt");
+	ret = kvdb.open("/sdcard/beijing/beijing.navi", "sdcard/beijing/beijing.index");
 	if(ret)
 		LOGI("kvdb open success");
 	else
@@ -72,46 +72,82 @@ extern "C" void Java_com_sogou_leveldblib_LevelDB_test(JNIEnv* env, jobject thiz
 		return ;
 	}
 
-	char temp[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a};
-//	Slice key("AAAAAAAAAA", 10);
-	Slice key;
+	int index;
+	string data[] = {"Hello", "World", "NaviLink", "Sogou", "beijing", "Good"};
 
-	LevelDB::makeKey(0x1122, 0x33445566778899aa, key);
-
-	statue = leveldb.insert(key, "Sogou");
-	if(statue.ok())
-		LOGI("leveldb insert success");
-	else
+	leveldb.atomReady();
+	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
 	{
-		LOGE("leveldb insert failed, %s", statue.ToString().data());
-		return ;
+		statue = leveldb.insert(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i, data[i]);
+		if(!statue.ok())
+		{
+			LOGE("leveldb insert failed, %s", statue.ToString().data());
+			return ;
+		}
 	}
+	leveldb.atomCommit();
+
+//	leveldb.atomReady();
+//	while((index = kvdb.getRecord(data)) != 0)
+//	{
+//		statue = leveldb.insert(0x0001, index, data);
+//		if(!statue.ok())
+//		{
+//			LOGE("leveldb insert failed, %s", statue.ToString().data());
+//			return ;
+//		}
+//	}
+//	leveldb.atomCommit();
+
+	LOGE("leveldb insert %s", statue.ToString().data());
+
+
 	leveldb.close();
 
-	statue = leveldb.open("/sdcard/tmp/leveldb/", "beijing", false, true);
-	if(statue.ok())
-		LOGI("leveldb open success");
-	else
+	statue = leveldb.make();
+	if(statue.ok() == false)
 	{
-		LOGE("leveldb open failed");
-		return ;
+		LOGI("leveldb make error");
+		LOGI(statue.ToString().data());
 	}
 
-	std::string value;
-//	LevelDB::makeKey(0x1122, 0x33445566778899aa, key);
-	statue = leveldb.query(key, value);
-	if(statue.ok())
-		LOGI("leveldb query success, %s", value.data());
-	else
-	{
-		LOGE("leveldb query failed, %s", statue.ToString().data());
+//	statue = leveldb.open("/sdcard/tmp/leveldb/", "beijing", false, true);
+//	if(statue.ok())
+//		LOGI("leveldb open success");
+//	else
+//	{
+//		LOGE("leveldb open failed");
 //		return ;
-	}
+//	}
+//
+//
+//	string queryResult;
+//	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
+//	{
+//		statue = leveldb.query(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i , queryResult);
+//		if(!statue.ok())
+//		{
+//			LOGE("leveldb insert failed, %s", statue.ToString().data());
+//			return ;
+//		}
+//		LOGE("query result %s", queryResult.data());
+//	}
 
-//	std::vector<VirtualMemFile *> files;
-//	leveldb.getVirtualFiles(files);
-//	for(int i = 0 ; i< files.size() ; i++)
-//		LOGI(files[i]->toString().data());
+//	std::string value;
+////	LevelDB::makeKey(0x1122, 0x33445566778899aa, key);
+//	statue = leveldb.query(key, value);
+//	if(statue.ok())
+//		LOGI("leveldb query success, %s", value.data());
+//	else
+//	{
+//		LOGE("leveldb query failed, %s", statue.ToString().data());
+////		return ;
+//	}
+//
+////	std::vector<VirtualMemFile *> files;
+////	leveldb.getVirtualFiles(files);
+////	for(int i = 0 ; i< files.size() ; i++)
+////		LOGI(files[i]->toString().data());
 	leveldb.close();
 
 //	kvdb.getRecord()

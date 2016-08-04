@@ -24,7 +24,6 @@
 //   Store per-table metadata (smallest, largest, largest-seq#, ...)
 //   in the table's meta section to speed up ScanTable.
 
-#include <util/LogUtil.h>
 #include "db/builder.h"
 #include "db/db_impl.h"
 #include "db/dbformat.h"
@@ -375,7 +374,6 @@ class Repairer {
   }
 
   Status WriteDescriptor() {
-	  LOGE("WriteDescriptor");
     std::string tmp = TempFileName(dbpath_, dbname_, 1);
     WritableFile* file;
     Status status = env_->NewWritableFile(tmp, &file);
@@ -435,7 +433,6 @@ class Repairer {
   }
 
   void ArchiveFile(const std::string& fname) {
-	  LOGE("ArchiveFile");
     // Move into another directory.  E.g., for
     //    dir/foo
     // rename to

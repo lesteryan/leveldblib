@@ -5,7 +5,6 @@
 #include "db/log_reader.h"
 
 #include <stdio.h>
-#include <util/LogUtil.h>
 #include "leveldb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
@@ -60,7 +59,6 @@ bool Reader::SkipToInitialBlock() {
 bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   if (last_record_offset_ < initial_offset_) {
     if (!SkipToInitialBlock()) {
-    	LOGI("FLAG 63");
       return false;
     }
   }
@@ -157,7 +155,6 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
           // treat it as a corruption, just ignore the entire logical record.
           scratch->clear();
         }
-        LOGI("FLAG 160");
         return false;
 
       case kBadRecord:
@@ -180,7 +177,6 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
       }
     }
   }
-  LOGI("FLAG 182");
   return false;
 }
 
@@ -211,7 +207,6 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
           buffer_.clear();
           ReportDrop(kBlockSize, status);
           eof_ = true;
-          LOGE("FLAG 211");
           return kEof;
         } else if (buffer_.size() < kBlockSize) {
           eof_ = true;
@@ -223,7 +218,6 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
         // middle of writing the header. Instead of considering this an error,
         // just report EOF.
         buffer_.clear();
-        LOGE("FLAG 223");
         return kEof;
       }
     }
@@ -244,7 +238,6 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       // If the end of the file has been reached without reading |length| bytes
       // of payload, assume the writer died in the middle of writing the record.
       // Don't report a corruption.
-      LOGE("FLAG 244");
       return kEof;
     }
 
@@ -282,7 +275,6 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
     }
 
     *result = Slice(header + kHeaderSize, length);
-    LOGE("FLAG 282");
     return type;
   }
 }

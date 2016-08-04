@@ -45,13 +45,15 @@ class KvDB
 	}
 
 	//get a record and index
-	bool getRecord(int& index, string &data)
+	int getRecord(string &data)
 	{
 		if(isOpenSuccess == false)
 		{
-			return false;
+			return 0;
 		}
 		data.clear();
+
+		int index;
 
 		if(fscanf(fp, "%d", &index) <= 0)
 		{
@@ -59,16 +61,18 @@ class KvDB
 			return false;
 		}
 
+//		LOGI("index = %d", index);
+
 		kvdbEngine::Record *record = table.search("NaviData", index);
 
 		if(record == 0)
 		{
 			sprintf(tempBuffer, "get index failed, index = %d", index);
 			LOGE(tempBuffer);
-			return false;
+			return 0;
 		}
 		string temp;
-		for(int i = 0 ; i < 5 ; i++)
+		for(int i = 0 ; i < 4 ; i++)
 		{
 			if(record->getFieldAsString(i ,temp))
 				data+=temp;

@@ -20,7 +20,7 @@
 #include "leveldb/status.h"
 
 #ifdef BUILD_HADOOP
-#include "leveldb/util/fileSystem/VirtualMemFile.h"
+#include "util/fileSystem/VirtualMemFile.h"
 #endif
 
 namespace leveldb {

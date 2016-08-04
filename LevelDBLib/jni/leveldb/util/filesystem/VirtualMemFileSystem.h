@@ -59,9 +59,6 @@ public:
 private:
     std::set<std::string > _dirs;
     std::vector<VirtualMemFile *> _files;
-
-    // /mnt/sdcard -> /mnt/sdcard/   /mnt/sdcard/ -> /mnt/sdcard/
-    std::string formatDir(const std::string& path);
 };
 
 #endif /* VIRTUALMEMFILESYSTEM_H_ */

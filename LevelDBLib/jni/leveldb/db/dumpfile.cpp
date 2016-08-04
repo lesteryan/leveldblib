@@ -15,6 +15,7 @@
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
+#include "util/PathParser.h"
 
 namespace leveldb {
 
@@ -29,7 +30,10 @@ bool GuessType(const std::string& fname, FileType* type) {
     basename = std::string(fname.data() + pos + 1, fname.size() - pos - 1);
   }
   uint64_t ignored;
-  return ParseFileName(basename, &ignored, type);
+  std::string _dbPath, _dbName;
+  if(PathParser::parseFilePath(fname, _dbPath, _dbName) == false)
+      return false;
+  return ParseFileName(_dbPath, _dbName, &ignored, type);
 }
 
 // Notified when log reader encounters corruption.

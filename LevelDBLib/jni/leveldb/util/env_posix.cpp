@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <util/LogUtil.h>
 #include <deque>
 #include <set>
 #include "leveldb/env.h"
@@ -55,13 +54,13 @@ static Status IOError(const std::string& context, const std::string& msg) {
 	  virtual ~PosixSequentialFile() {file_->close();}
 
 	  virtual Status Read(size_t n, Slice* result, char* scratch) {
-		LOGI((file_->getFileName() + " read PosixSequentialFile ").data());
+//		LOGI((file_->getFileName() + " read PosixSequentialFile ").data());
 
 	    Status s;
 	    string str;
 	    size_t r;
 
-	    LOGI("%s read", file_->getFileName().data());
+//	    LOGI("%s read", file_->getFileName().data());
 	    file_->read(result, n);
 
 	    return s;
@@ -87,7 +86,7 @@ static Status IOError(const std::string& context, const std::string& msg) {
 
 	  virtual Status Read(uint64_t offset, size_t n, Slice* result,
 	                      char* scratch) const {
-		LOGI((file_->getFileName() + " read PosixRandomAccessFile ").data());
+//		LOGI((file_->getFileName() + " read PosixRandomAccessFile ").data());
 	    Status s;
 	    string str;
 	    size_t r;
@@ -305,7 +304,7 @@ class PosixWritableFile : public WritableFile {
   PosixWritableFile(const std::string& fname, FILE* f)
       : filename_(fname), file_(f) { }
 
-  ~PosixWritableFile() {
+  virtual ~PosixWritableFile() {
     if (file_ != NULL) {
       // Ignoring any potential errors
       fclose(file_);
@@ -470,7 +469,7 @@ class PosixEnv : public Env {
     }
 
     virtual Status DeleteFile(const std::string& fname) {
-    	LOGE((std::string("delete file ") + fname).data());
+//    	LOGE((std::string("delete file ") + fname).data());
 		if(!fileSystem.deleteFile(fname))
 			return IOError(fname, fname + "delete error");
 		else
@@ -625,7 +624,6 @@ class PosixEnv : public Env {
       	if(strncmp(entry->d_name, dbname.data(), dbname.length()) == 0)
       	{
       			result->push_back(entry->d_name);
-      			LOGW((std::string("get child -> ") + entry->d_name).data());
       	}
       }
       closedir(d);
@@ -633,7 +631,6 @@ class PosixEnv : public Env {
     }
 
     virtual Status DeleteFile(const std::string& fname) {
-  	  LOGE((std::string("delete file ") + fname).data());
       Status result;
       if (unlink(fname.c_str()) != 0) {
         result = IOError(fname, errno);
@@ -854,7 +851,7 @@ void PosixEnv::CloseAllFile()
 
 void PosixEnv::printFileSystem()
 {
-	LOGI(fileSystem.toString().data());
+	//LOGI(fileSystem.toString().data());
 }
 
 std::vector<VirtualMemFile *> PosixEnv::getFiles()

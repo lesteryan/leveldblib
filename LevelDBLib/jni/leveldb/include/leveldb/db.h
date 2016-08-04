@@ -12,7 +12,7 @@
 #include "leveldb/options.h"
 
 #ifdef BUILD_HADOOP
-#include "leveldb/util/filesystem/VirtualMemFile.h"
+#include "util/filesystem/VirtualMemFile.h"
 #endif
 
 namespace leveldb {

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <stdio.h>
-#include <util/LogUtil.h>
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -887,13 +886,14 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 }
 
 Status VersionSet::Recover(bool *save_manifest) {
-	LOGI("start version recover");
 	struct LogReporter: public log::Reader::Reporter {
 		Status* status;
 		virtual void Corruption(size_t bytes, const Status& s) {
 			if (this->status->ok())
 				*this->status = s;
 		}
+
+		virtual ~LogReporter(){}
 	};
 
 	// Read "CURRENT" file, which contains a pointer to the current manifest file
@@ -912,7 +912,6 @@ Status VersionSet::Recover(bool *save_manifest) {
 
 	Status s = env_->NewSequentialFile(dscname, &file);
 	if (!s.ok()) {
-		LOGE("ERROR 916");
 		return s;
 	}
 
@@ -983,7 +982,6 @@ Status VersionSet::Recover(bool *save_manifest) {
 		}
 
 		if (!have_prev_log_number) {
-			LOGE("!!!!!!!!prevLogNumber %d", prev_log_number);
 			prev_log_number = 0;
 		}
 
@@ -1008,12 +1006,6 @@ Status VersionSet::Recover(bool *save_manifest) {
 		} else {
 			*save_manifest = true;
 		}
-	}
-
-	if(s.ok() == false)
-	{
-		LOGE("ERROR 1015");
-		LOGE(s.ToString().data());
 	}
 
 	return s;

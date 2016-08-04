@@ -7,13 +7,14 @@
 
 #include "VirtualMemFile.h"
 #include "FdManager.h"
+#include "Util/PathParser.h"
 #include <pthread.h>
-#include <util/LogUtil.h>
 using namespace std;
 
 VirtualMemFile::VirtualMemFile(const std::string& fileName) :
-        _fd(FdManager::allocFd()), _filePos(0), _fileLength(0),_mutex(PTHREAD_MUTEX_INITIALIZER) {
-    parseFilePath(fileName);
+        _fd(FdManager::allocFd()), _filePos(0), _fileLength(0){
+	PathParser::parseFilePath(fileName, _filePath, _fileName);
+		 pthread_mutex_init(&_mutex, 0);
     _fileContent = (char *)malloc(64);
     _fileLength = 0;
     _filePos = 0;
@@ -24,8 +25,6 @@ VirtualMemFile::~VirtualMemFile(){
     pthread_mutex_destroy(&_mutex);
     free(_fileContent);
     close();
-
-    LOGI("virtual file destuctor");
 }
 
 std::string VirtualMemFile::getFileName() {
@@ -41,7 +40,7 @@ int VirtualMemFile::getFd() {
 }
 
 void VirtualMemFile::rename(const std::string& newName) {
-	_fileName = newName;
+	PathParser::parseFilePath(newName, _filePath, _fileName);
 }
 
 bool VirtualMemFile::lockFile() {
@@ -139,7 +138,6 @@ bool VirtualMemFile::write(size_t pos, size_t len, const char * result) {
 //	LOGI("write2 %s filepos = %ld, data = %s, pos = %ld, size = %ld", _fileName.data(), _filePos, result, pos, len);
 	if (pos > getFileSize())
 	{
-		LOGE("error write, pos > fileSize, pos = %d, fileSize = ", pos, getFileSize());
 		return false;
 	}
 	else
@@ -168,38 +166,6 @@ std::string VirtualMemFile::toString() {
 
 	sprintf(temp, "\tfilePath %s\t fileName %s\t fileSize %d\tfileContent%s", _filePath.data(), _fileName.data(), getFileSize(), _fileContent);
 	return std::string(temp, sizeof(temp));
-}
-
-bool VirtualMemFile::parseFilePath(const std::string& file)
-{
-    int lastSep = file.find_last_of('/');
-    if(lastSep == std::string::npos)
-    {
-    	LOGE("parse file error, %s", file.data());
-        return false;
-    }
-
-    this->_filePath = file.substr(0, lastSep + 1);
-    this->_fileName = file.substr(lastSep + 1, file.length() - lastSep);
-    return true;
-}
-
-bool VirtualMemFile::parseFilePath(const std::string& fname, std::string& filePath, std::string& fileName)
-{
-    int lastSep = fname.find_last_of('/');
-    if(lastSep == std::string::npos)
-    {
-       	LOGE("parse file error, %s", fname.data());
-        return false;
-    }
-
-    if(fname[lastSep - 1] == '/')
-    	filePath = fname.substr(0, lastSep);
-    else
-    	filePath = fname.substr(0, lastSep + 1);
-
-    fileName = fname.substr(lastSep + 1, fname.length() - lastSep);
-    return true;
 }
 
 void VirtualMemFile::close()

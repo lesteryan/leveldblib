@@ -4,7 +4,6 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <util/LogUtil.h>
 #include "db/filename.h"
 #include "db/dbformat.h"
 #include "leveldb/env.h"
@@ -112,7 +111,6 @@ bool ParseFileName(const std::string& dbpath, const std::string& fname, uint64_t
 	std::string suffix;
 	uint64_t tmpNumber;
 	if (GetFileSuffix(fname, suffix) == false) {
-		LOGE("get file suffix failed");
 		return false;
 	}
 
