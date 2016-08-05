@@ -32,7 +32,6 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-
 namespace leveldb {
 
 const int kNumNonTableCacheFiles = 10;
@@ -299,7 +298,7 @@ void DBImpl::DeleteObsoleteFiles() {
 //				LOGW(keep ? "keep manifest" : "delete manifest");
 				break;
 			case kTableFile:
-				keep = (live.find(number) != live.end());
+                keep = true;
 				break;
 			case kTempFile:
 				// Any temp files that are currently being written to must
@@ -376,7 +375,9 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 		return s;
 	}
 	std::set<uint64_t> expected;
-	versions_->AddLiveFiles(&expected);
+//	versions_->AddLiveFiles(&expected);
+    expected.insert(FILENUMBER_LDB);
+    expected.insert(FILENUMBER_MANIFEST);
 	uint64_t number;
 	FileType type;
 	std::vector < std::string > logs;
@@ -394,7 +395,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
 		snprintf(buf, sizeof(buf), "%d missing files; e.g.",
 				static_cast<int>(expected.size()));
 		return Status::Corruption(buf,
-				TableFileName(dbpath_, dbname_, *(expected.begin())));
+				TableFileName(dbpath_, dbname_, FILENUMBER_LDB));
 	}
 
 	// Recover in the order in which the logs were generated
@@ -545,10 +546,9 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
 	mutex_.AssertHeld();
 	const uint64_t start_micros = env_->NowMicros();
 	FileMetaData meta;
-	if(options_.write_only)
-		meta.number = leveldb::DB_NUM_NONE;
-	else
-		meta.number = versions_->NewFileNumber();
+//	meta.number = versions_->NewFileNumber();
+    meta.number = FILENUMBER_LDB;
+		
 	pending_outputs_.insert(meta.number);
 	Iterator* iter = mem->NewIterator();
 	Log(options_.info_log, "Level-0 table #%llu: started",
@@ -848,7 +848,8 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
 	uint64_t file_number;
 	{
 		mutex_.Lock();
-		file_number = versions_->NewFileNumber();
+//		file_number = versions_->NewFileNumber();
+        file_number = FILENUMBER_LDB;
 		pending_outputs_.insert(file_number);
 		CompactionState::Output out;
 		out.number = file_number;

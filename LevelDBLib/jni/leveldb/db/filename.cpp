@@ -50,7 +50,7 @@ std::string LogFileName(const std::string& dbpath, const std::string& dbname,
 std::string TableFileName(const std::string& dbpath, const std::string& dbname,
 		uint64_t number) {
 	assert(number >= 0);
-	if(number == DB_NUM_NONE)
+	if(number == FILENUMBER_LDB)
 		return MakeFileName(dbpath, dbname, "ldb");
 	else
 		return MakeFileName(dbpath, dbname, number, "ldb");
@@ -137,7 +137,13 @@ bool ParseFileName(const std::string& dbpath, const std::string& fname, uint64_t
 		*type = kDescriptorFile;
 //		*number = num;
 		*number = 1;
-	} else {
+	} else if(suffix == "ldb"){
+        if((fname.substr(0, fname.find_first_of('.') + 1) + "ldb") != fname)
+            return false;
+        *type = kTableFile;
+        *number = FILENUMBER_LDB;
+    }
+    else {
 		// Avoid strtoull() to keep filename format independent of the
 		// current locale
 		uint64_t num;

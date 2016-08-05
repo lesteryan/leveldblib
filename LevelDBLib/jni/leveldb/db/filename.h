@@ -27,7 +27,8 @@ enum FileType {
   kInfoLogFile  // Either the current one, or an old one
 };
 
-const uint64_t DB_NUM_NONE = 0;
+const uint64_t FILENUMBER_LDB = 0;
+const uint64_t FILENUMBER_MANIFEST = 1;
 
 // Return the name of the log file with the specified number
 // in the db named by "dbname".  The result will be prefixed with

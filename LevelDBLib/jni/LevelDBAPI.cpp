@@ -110,28 +110,32 @@ extern "C" void Java_com_sogou_leveldblib_LevelDB_test(JNIEnv* env, jobject thiz
 		LOGI("leveldb make error");
 		LOGI(statue.ToString().data());
 	}
+	else
+	{
+		LOGI("leveldb make success");
+	}
 
-//	statue = leveldb.open("/sdcard/tmp/leveldb/", "beijing", false, true);
-//	if(statue.ok())
-//		LOGI("leveldb open success");
-//	else
-//	{
-//		LOGE("leveldb open failed");
-//		return ;
-//	}
-//
-//
-//	string queryResult;
-//	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
-//	{
-//		statue = leveldb.query(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i , queryResult);
-//		if(!statue.ok())
-//		{
-//			LOGE("leveldb insert failed, %s", statue.ToString().data());
-//			return ;
-//		}
-//		LOGE("query result %s", queryResult.data());
-//	}
+	statue = leveldb.open("/sdcard/tmp/leveldb/", "beijing", true, false);
+	if(statue.ok())
+		LOGI("leveldb open success");
+	else
+	{
+		LOGE("leveldb open failed %s", statue.ToString().data());
+		return ;
+	}
+
+
+	string queryResult;
+	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
+	{
+		statue = leveldb.query(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i , queryResult);
+		if(!statue.ok())
+		{
+			LOGE("leveldb insert failed, %s", statue.ToString().data());
+			return ;
+		}
+		LOGE("query result %s", queryResult.data());
+	}
 
 //	std::string value;
 ////	LevelDB::makeKey(0x1122, 0x33445566778899aa, key);

@@ -258,6 +258,7 @@ class Repairer {
 
   void ScanTable(uint64_t number) {
     TableInfo t;
+    number = FILENUMBER_LDB;
     t.meta.number = number;
     std::string fname = TableFileName(dbpath_, dbname_, number);
     Status status = env_->GetFileSize(fname, &t.meta.file_size);
@@ -360,7 +361,8 @@ class Repairer {
     file = NULL;
 
     if (counter > 0 && s.ok()) {
-      std::string orig = TableFileName(dbpath_, dbname_, t.meta.number);
+//      std::string orig = TableFileName(dbpath_, dbname_, t.meta.number);
+        std::string orig = TableFileName(dbpath_, dbname_, FILENUMBER_LDB);
       s = env_->RenameFile(copy, orig);
       if (s.ok()) {
         Log(options_.info_log, "Table #%llu: %d entries repaired",
