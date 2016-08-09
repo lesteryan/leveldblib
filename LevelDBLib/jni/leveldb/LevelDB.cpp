@@ -71,13 +71,13 @@ Status LevelDB::insert(const unsigned short type, const unsigned int id, const S
     return insert(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
 }
 
-Status LevelDB::insert(const unsigned short type, const unsigned int id, const int index, const Slice& value)
-{
-    char tmpArray[7];
-    makeKey(type, id, index, tmpArray);
-
-    return insert(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
-}
+//Status LevelDB::insert(const unsigned short type, const unsigned int id, const int index, const Slice& value)
+//{
+//    char tmpArray[7];
+//    makeKey(type, id, index, tmpArray);
+//
+//    return insert(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
+//}
 
 Status LevelDB::atomReady()
 {
@@ -117,18 +117,21 @@ Status LevelDB::query(const unsigned short type, const unsigned int id, std::str
     return query(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
 }
 
-Status LevelDB::query(const unsigned short type, const unsigned int id, const int index, std::string& value)
-{
-    char tmpArray[7];
-    makeKey(type, id, index, tmpArray);
-
-    return query(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
-}
+//Status LevelDB::query(const unsigned short type, const unsigned int id, const int index, std::string& value)
+//{
+//    char tmpArray[7];
+//    makeKey(type, id, index, tmpArray);
+//
+//    return query(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
+//}
 
 Status LevelDB::make()
 {
 	if(dbPath.length() == 0 || dbName.length() == 0)
 		return Status::NotSupported("dbpath or dbname invalid");
+    
+    if(isOpen())
+        close();
 
 	Status statue;
 	statue = this->open(dbPath, dbName, true, false);
@@ -164,12 +167,12 @@ void LevelDB::makeKey(const short type, const int id, char* key)
 	integer2array(id, key + 2, 4);
 }
 
-void LevelDB::makeKey(const short type, const int id, int index, char * key)
-{
-    integer2array(type, key, 2);
-    integer2array(id, key + 2, 4);
-    integer2array(index, key + 6, 1);
-}
+//void LevelDB::makeKey(const short type, const int id, int index, char * key)
+//{
+//    integer2array(type, key, 2);
+//    integer2array(id, key + 2, 4);
+//    integer2array(index, key + 6, 1);
+//}
 
 void LevelDB::integer2array(const long long value, char * dest, const int len)
 {

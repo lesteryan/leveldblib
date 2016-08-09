@@ -40,7 +40,7 @@ public:
 
     Status insert(const unsigned short type, const unsigned int id, const Slice& value);
 
-    Status insert(const unsigned short type, const unsigned int id, const int index, const Slice& value);
+//    Status insert(const unsigned short type, const unsigned int id, const int index, const Slice& value);
 
 	Status atomReady();
 
@@ -50,7 +50,7 @@ public:
 
     Status query(const unsigned short type, const unsigned int id, std::string& value);
 
-    Status query(const unsigned short type, const unsigned int id, const int index, std::string& value);
+//    Status query(const unsigned short type, const unsigned int id, const int index, std::string& value);
 
 	Status destory();
 
@@ -74,7 +74,7 @@ private:
 
     void integer2array(const long long value, char * dest, const int len);
     void makeKey(const short type, const int id, char * key);
-    void makeKey(const short type, const int id, int index, char * key);
+//    void makeKey(const short type, const int id, int index, char * key);
 };
 
 

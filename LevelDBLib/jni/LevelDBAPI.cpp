@@ -1,4 +1,4 @@
-#include <jni.h>
+ #include <jni.h>
 #include "LevelDB.h"
 #include "KvDB/KvDB.h"
 //LevelDB *levelDB = NULL;
@@ -78,7 +78,7 @@ extern "C" void Java_com_sogou_leveldblib_LevelDB_test(JNIEnv* env, jobject thiz
 	leveldb.atomReady();
 	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
 	{
-		statue = leveldb.insert(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i, data[i]);
+		statue = leveldb.insert(LevelDB::KEY_HEAD_ROADNAME, i, data[i]);
 		if(!statue.ok())
 		{
 			LOGE("leveldb insert failed, %s", statue.ToString().data());
@@ -128,7 +128,7 @@ extern "C" void Java_com_sogou_leveldblib_LevelDB_test(JNIEnv* env, jobject thiz
 	string queryResult;
 	for(int i = 0 ; i < sizeof(data)/sizeof(std::string) ; i++)
 	{
-		statue = leveldb.query(LevelDB::KEY_HEAD_ROADNAME, 0x0001, i , queryResult);
+		statue = leveldb.query(LevelDB::KEY_HEAD_ROADNAME, i, queryResult);
 		if(!statue.ok())
 		{
 			LOGE("leveldb insert failed, %s", statue.ToString().data());
