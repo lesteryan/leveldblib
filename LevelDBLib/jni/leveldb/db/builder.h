@@ -7,7 +7,7 @@
 
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 struct Options;
 struct FileMetaData;

@@ -9,7 +9,7 @@
 #include "table/format.h"
 #include "table/iterator_wrapper.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 namespace {
 

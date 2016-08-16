@@ -11,7 +11,7 @@
 #include "leveldb/status.h"
 #include "leveldb/table_builder.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Block;
 class RandomAccessFile;

@@ -9,7 +9,7 @@
 #include "leveldb/env.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // A utility routine: write "data" to the named file and Sync() it.
 extern Status WriteStringToFileSync(Env* env, const Slice& data,
@@ -17,26 +17,26 @@ extern Status WriteStringToFileSync(Env* env, const Slice& data,
 
 static std::string MakeFileName(const std::string& dbpath,
 		const std::string& name, uint64_t number, const char* suffix) {
-	char buf[100];
+	char buf[1024];
 	snprintf(buf, sizeof(buf), "%s%s.%06llu.%s", dbpath.data(), name.data(), number, suffix);
 	return buf;
 }
 
 static std::string MakeFileName(const std::string& dbpath,
 		const std::string& dbname, const char* suffix) {
-	char buf[100];
+	char buf[1024];
 	snprintf(buf, sizeof(buf), "%s%s.%s", dbpath.data(), dbname.data(), suffix);
 	return buf;
 }
 
 static std::string MakeFileName(const std::string& dbname, uint64_t number, const char* suffix) {
-	char buf[100];
+	char buf[1024];
 	snprintf(buf, sizeof(buf), "%s.%06llu.%s", dbname.data(), number, suffix);
 	return buf;
 }
 
 static std::string MakeFileName(const std::string& dbname, const char* suffix) {
-	char buf[100];
+	char buf[1024];
 	snprintf(buf, sizeof(buf), "%s.%s", dbname.data(), suffix);
 	return buf;
 }

@@ -4,7 +4,7 @@
 
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 void EncodeFixed32(char* buf, uint32_t value) {
   if (port::kLittleEndian) {

@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 struct BlockContents;
 class Comparator;

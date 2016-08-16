@@ -7,7 +7,7 @@
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // See doc/table_format.txt for an explanation of the filter block format.
 

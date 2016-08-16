@@ -17,7 +17,7 @@
 #include "util/logging.h"
 #include "util/PathParser.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 namespace {
 

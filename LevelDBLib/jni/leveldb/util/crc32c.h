@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace leveldb {
+namespace leveldb_navi {
 namespace crc32c {
 
 // Return the crc32c of concat(A, data[0,n-1]) where init_crc is the

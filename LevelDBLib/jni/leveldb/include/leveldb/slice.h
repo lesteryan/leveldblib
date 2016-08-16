@@ -20,7 +20,7 @@
 #include <string.h>
 #include <string>
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Slice {
  public:

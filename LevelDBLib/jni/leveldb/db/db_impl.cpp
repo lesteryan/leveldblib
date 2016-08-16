@@ -32,7 +32,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-namespace leveldb {
+namespace leveldb_navi {
 
 const int kNumNonTableCacheFiles = 10;
 
@@ -281,21 +281,12 @@ void DBImpl::DeleteObsoleteFiles() {
 			case kLogFile:
 				keep = ((number >= versions_->LogNumber())
 						|| (number == versions_->PrevLogNumber()));
-//				LOGE(keep ? "keep log file" : "delete, have log file");
-//				char temp[255];
-//				sprintf(temp,
-//						"number = %06llu, logNumber = %06llu, prelogNumber = %06llu",
-//						number, versions_->LogNumber(),
-//						versions_->PrevLogNumber());
-//				LOGE(temp);
-//				this->printFileSystem();
 				break;
 			case kDescriptorFile:
 				// Keep my manifest file, and any newer incarnations'
 				// (in case there is a race that allows other incarnations)
 //				keep = (number >= versions_->ManifestFileNumber());
 				keep = number == 1;
-//				LOGW(keep ? "keep manifest" : "delete manifest");
 				break;
 			case kTableFile:
                 keep = true;

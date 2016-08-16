@@ -43,7 +43,7 @@
 #define ARCH_CPU_MIPS_FAMILY 1
 #endif
 
-namespace leveldb {
+namespace leveldb_navi {
 namespace port {
 
 // Define MemoryBarrier() if available

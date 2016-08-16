@@ -12,7 +12,7 @@
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 Status BuildTable(const std::string& dbpath,
 		          const std::string& dbname,

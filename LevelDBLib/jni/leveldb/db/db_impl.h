@@ -15,7 +15,7 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class MemTable;
 class TableCache;

@@ -4,7 +4,7 @@
 
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 Env::~Env() {
 }

@@ -11,7 +11,7 @@
 #include "util/hash.h"
 #include "util/mutexlock.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 Cache::~Cache() {
 }

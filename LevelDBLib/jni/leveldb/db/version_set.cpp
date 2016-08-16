@@ -18,7 +18,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 static const int kTargetFileSize = 2 * 1048576;
 

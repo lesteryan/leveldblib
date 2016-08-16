@@ -9,7 +9,7 @@
 #include "leveldb/iterator.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 static Slice GetLengthPrefixedSlice(const char* data) {
   uint32_t len;

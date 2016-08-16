@@ -7,7 +7,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 Options::Options()
     : comparator(BytewiseComparator()),

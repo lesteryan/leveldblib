@@ -28,7 +28,7 @@
 #include "filesystem/VirtualMemFileSystem.h"
 #endif
 
-namespace leveldb {
+namespace leveldb_navi {
 
 namespace {
 

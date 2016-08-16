@@ -16,7 +16,7 @@
 #include <string>
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Status {
  public:

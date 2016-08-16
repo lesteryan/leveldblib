@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 namespace crc32c {
 
 static const uint32_t table0_[256] = {

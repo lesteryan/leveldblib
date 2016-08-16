@@ -6,7 +6,7 @@
 #include "port/port.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 const char* Status::CopyState(const char* state) {
   uint32_t size;

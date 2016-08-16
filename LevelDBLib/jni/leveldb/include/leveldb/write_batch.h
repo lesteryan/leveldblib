@@ -24,7 +24,7 @@
 #include <string>
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Slice;
 

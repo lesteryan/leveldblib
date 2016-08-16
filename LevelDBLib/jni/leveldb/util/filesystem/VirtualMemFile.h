@@ -13,7 +13,8 @@
 #include <vector>
 #include <stdlib.h>
 #include "leveldb/slice.h"
-using namespace std;
+
+namespace leveldb_navi {
 
 class VirtualMemFile {
 public:
@@ -39,9 +40,9 @@ public:
 
 	bool seek(uint64_t n);
 
-	size_t read(leveldb::Slice* result, size_t len);
+	size_t read(leveldb_navi::Slice* result, size_t len);
 
-	size_t read(leveldb::Slice* result, size_t pos, size_t len);
+    size_t read(leveldb_navi::Slice* result, size_t pos, size_t len);
 
 	bool write(const char* result, size_t len);
 
@@ -67,5 +68,6 @@ private:
 
     void allocMemory(int writeLen);
 };
+}
 
 #endif /* VIRTUALMEMFILE_H_ */

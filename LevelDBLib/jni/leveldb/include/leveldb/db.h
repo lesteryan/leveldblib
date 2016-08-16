@@ -15,7 +15,7 @@
 #include "util/filesystem/VirtualMemFile.h"
 #endif
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // Update Makefile if you change these
 static const int kMajorVersion = 1;

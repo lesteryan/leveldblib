@@ -15,7 +15,7 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 struct Table::Rep {
   ~Rep() {

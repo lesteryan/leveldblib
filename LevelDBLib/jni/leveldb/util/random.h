@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // A very simple random number generator.  Not especially good at
 // generating truly random bits, but good enough for our needs in this

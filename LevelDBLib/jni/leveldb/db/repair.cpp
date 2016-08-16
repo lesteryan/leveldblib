@@ -37,7 +37,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
-namespace leveldb {
+namespace leveldb_navi {
 
 namespace {
 

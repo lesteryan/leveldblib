@@ -1,5 +1,7 @@
 #include "FdManager.h"
 
+namespace leveldb_navi {
+    
 std::set<int> FdManager::_fdPool;
 
 int FdManager::allocFd() {
@@ -14,4 +16,5 @@ int FdManager::allocFd() {
 
 void FdManager::recycleFd(int fd) {
     _fdPool.erase(fd);
+}
 }

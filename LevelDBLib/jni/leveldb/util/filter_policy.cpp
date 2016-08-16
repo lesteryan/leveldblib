@@ -4,7 +4,7 @@
 
 #include "leveldb/filter_policy.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 FilterPolicy::~FilterPolicy() { }
 

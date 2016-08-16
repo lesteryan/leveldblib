@@ -7,7 +7,7 @@
 #include "port/port.h"
 #include "util/histogram.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 const double Histogram::kBucketLimit[kNumBuckets] = {
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45,

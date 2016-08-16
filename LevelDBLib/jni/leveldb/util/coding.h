@@ -16,7 +16,7 @@
 #include "leveldb/slice.h"
 #include "port/port.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // Standard Put... routines append to a string
 extern void PutFixed32(std::string* dst, uint32_t value);

@@ -13,7 +13,7 @@
 #define FALLTHROUGH_INTENDED do { } while (0)
 #endif
 
-namespace leveldb {
+namespace leveldb_navi {
 
 uint32_t Hash(const char* data, size_t n, uint32_t seed) {
   // Similar to murmur hash

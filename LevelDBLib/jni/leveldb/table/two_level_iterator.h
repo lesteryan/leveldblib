@@ -7,7 +7,7 @@
 
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 struct ReadOptions;
 

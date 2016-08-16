@@ -17,7 +17,7 @@
 #include "leveldb/options.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class BlockBuilder;
 class BlockHandle;

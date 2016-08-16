@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include "port/port.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Arena {
  public:

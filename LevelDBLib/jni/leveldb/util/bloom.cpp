@@ -7,7 +7,7 @@
 #include "leveldb/slice.h"
 #include "util/hash.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 namespace {
 static uint32_t BloomHash(const Slice& key) {

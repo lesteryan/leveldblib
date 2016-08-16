@@ -4,7 +4,7 @@
 
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 Iterator::Iterator() {
   cleanup_.function = NULL;

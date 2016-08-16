@@ -11,7 +11,7 @@
 #include "db/skiplist.h"
 #include "util/arena.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class InternalKeyComparator;
 class Mutex;

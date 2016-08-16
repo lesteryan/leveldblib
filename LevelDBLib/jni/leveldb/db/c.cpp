@@ -16,30 +16,30 @@
 #include "leveldb/status.h"
 #include "leveldb/write_batch.h"
 
-using leveldb::Cache;
-using leveldb::Comparator;
-using leveldb::CompressionType;
-using leveldb::DB;
-using leveldb::Env;
-using leveldb::FileLock;
-using leveldb::FilterPolicy;
-using leveldb::Iterator;
-using leveldb::kMajorVersion;
-using leveldb::kMinorVersion;
-using leveldb::Logger;
-using leveldb::NewBloomFilterPolicy;
-using leveldb::NewLRUCache;
-using leveldb::Options;
-using leveldb::RandomAccessFile;
-using leveldb::Range;
-using leveldb::ReadOptions;
-using leveldb::SequentialFile;
-using leveldb::Slice;
-using leveldb::Snapshot;
-using leveldb::Status;
-using leveldb::WritableFile;
-using leveldb::WriteBatch;
-using leveldb::WriteOptions;
+using leveldb_navi::Cache;
+using leveldb_navi::Comparator;
+using leveldb_navi::CompressionType;
+using leveldb_navi::DB;
+using leveldb_navi::Env;
+using leveldb_navi::FileLock;
+using leveldb_navi::FilterPolicy;
+using leveldb_navi::Iterator;
+using leveldb_navi::kMajorVersion;
+using leveldb_navi::kMinorVersion;
+using leveldb_navi::Logger;
+using leveldb_navi::NewBloomFilterPolicy;
+using leveldb_navi::NewLRUCache;
+using leveldb_navi::Options;
+using leveldb_navi::RandomAccessFile;
+using leveldb_navi::Range;
+using leveldb_navi::ReadOptions;
+using leveldb_navi::SequentialFile;
+using leveldb_navi::Slice;
+using leveldb_navi::Snapshot;
+using leveldb_navi::Status;
+using leveldb_navi::WritableFile;
+using leveldb_navi::WriteBatch;
+using leveldb_navi::WriteOptions;
 
 extern "C" {
 

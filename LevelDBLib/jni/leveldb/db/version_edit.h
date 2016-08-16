@@ -10,7 +10,7 @@
 #include <vector>
 #include "db/dbformat.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class VersionSet;
 

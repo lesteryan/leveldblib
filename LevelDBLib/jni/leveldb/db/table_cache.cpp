@@ -8,7 +8,7 @@
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "util/coding.h"
-namespace leveldb {
+namespace leveldb_navi {
 
 struct TableAndFile {
   RandomAccessFile* file;

@@ -10,6 +10,8 @@
 
 #include <set>
 
+namespace leveldb_navi {
+
 class FdManager {
 public:
     FdManager(){}
@@ -22,5 +24,6 @@ public:
 private:
 	static std::set<int> _fdPool;
 };
-
+    
+}
 #endif /* FDMANAGER_H_ */

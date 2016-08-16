@@ -6,9 +6,9 @@
  */
 
 #include "VirtualMemFileSystem.h"
-#include "Util/PathParser.h"
-using namespace std;
+#include "../PathParser.h"
 
+namespace leveldb_navi {
 VirtualMemFileSystem::VirtualMemFileSystem() {
 }
 
@@ -229,4 +229,5 @@ void VirtualMemFileSystem::closeAll()
 std::vector<VirtualMemFile *> VirtualMemFileSystem::getAllFile()
 {
 	return _files;
+}
 }

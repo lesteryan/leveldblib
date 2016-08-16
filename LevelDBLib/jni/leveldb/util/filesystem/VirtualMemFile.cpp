@@ -7,10 +7,11 @@
 
 #include "VirtualMemFile.h"
 #include "FdManager.h"
-#include "Util/PathParser.h"
+#include "../PathParser.h"
 #include <pthread.h>
-using namespace std;
 
+namespace leveldb_navi {
+    
 VirtualMemFile::VirtualMemFile(const std::string& fileName) :
         _fd(FdManager::allocFd()), _filePos(0), _fileLength(0){
 	PathParser::parseFilePath(fileName, _filePath, _fileName);
@@ -78,14 +79,14 @@ bool VirtualMemFile::seek(uint64_t n) {
 	return true;
 }
 
-size_t VirtualMemFile::read(leveldb::Slice* result, size_t len) {
+size_t VirtualMemFile::read(leveldb_navi::Slice* result, size_t len) {
 	assert(len >= 0);
 //	LOGI("read1 %s filepos = %ld, size = %ld, len = %ld", _fileName.data(), _filePos, _fileLength, len);
 	if(len + _filePos > getFileSize())
 		len = getFileSize() - _filePos;
 	len = len < 0 ? 0 : len;
 
-	*result = leveldb::Slice(_fileContent + _filePos, len);
+	*result = leveldb_navi::Slice(_fileContent + _filePos, len);
 
 	_filePos += len;
 
@@ -97,7 +98,7 @@ size_t VirtualMemFile::read(leveldb::Slice* result, size_t len) {
 	return len;
 }
 
-size_t VirtualMemFile::read(leveldb::Slice* result, size_t pos, size_t len) {
+size_t VirtualMemFile::read(leveldb_navi::Slice* result, size_t pos, size_t len) {
 	assert(len >= 0);
 //	LOGI("read2 %s filepos = %d, size = %ld, len = %ld. pos=%ld", _fileName.data(), _filePos, _fileLength, len, pos);
 	if(pos + len > getFileSize())
@@ -107,7 +108,7 @@ size_t VirtualMemFile::read(leveldb::Slice* result, size_t pos, size_t len) {
 
 	len = len < 0 ? 0 : len;
 
-	*result = leveldb::Slice(_fileContent + pos, len);
+	*result = leveldb_navi::Slice(_fileContent + pos, len);
 	_filePos = pos + len;
 
 //	if(result->size() != len)
@@ -193,4 +194,5 @@ void VirtualMemFile::allocMemory(int writeLen)
 	memcpy(temp, _fileContent, getFileSize());
 	free(_fileContent);
 	_fileContent = temp;
+}
 }

@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 struct Options;
 

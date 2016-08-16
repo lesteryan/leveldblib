@@ -5,7 +5,7 @@
 #include "util/arena.h"
 #include <assert.h>
 
-namespace leveldb {
+namespace leveldb_navi {
 
 static const int kBlockSize = 4096;
 

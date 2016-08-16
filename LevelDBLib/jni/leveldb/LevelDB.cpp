@@ -12,6 +12,9 @@ LevelDB::~LevelDB()
 
 Status LevelDB::open(const std::string& _dbPath, const std::string& _dbName, bool _readOnly, bool _writeOnly)
 {
+    if(isOpen())
+        return Status::OK();
+    
 	option.create_if_missing = _readOnly ? false : true;
 	option.read_only = _readOnly;
 	option.write_only = _writeOnly;
@@ -36,8 +39,15 @@ Status LevelDB::open(const std::string& _dbPath)
 	std::string dbPath, dbName;
 	if(!PathParser::parseFilePath(_dbPath, dbPath, dbName))
 		return Status::InvalidArgument("path is invalid");
+    else if(isOpen())
+        return Status::OK();
 
 	return open(dbPath, dbName, true, false);
+}
+
+bool LevelDB::comparePath(const std::string &_dbPath, const std::string &_dbName)
+{
+    return (this->dbName == _dbName) && (this->dbPath == _dbPath);
 }
 
 bool LevelDB::isOpen()
@@ -49,8 +59,6 @@ Status LevelDB::insert(const Slice& key, const Slice& value)
 {
 	if(db == NULL)
 		return Status::IOError("database is not open");
-//    else if(key.size() != KEY_LENGTH)
-//		return Status::InvalidArgument("key length invalid");
 
     if(isAtomic)
     {
@@ -70,14 +78,6 @@ Status LevelDB::insert(const unsigned short type, const unsigned int id, const S
 
     return insert(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
 }
-
-//Status LevelDB::insert(const unsigned short type, const unsigned int id, const int index, const Slice& value)
-//{
-//    char tmpArray[7];
-//    makeKey(type, id, index, tmpArray);
-//
-//    return insert(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
-//}
 
 Status LevelDB::atomReady()
 {
@@ -117,14 +117,6 @@ Status LevelDB::query(const unsigned short type, const unsigned int id, std::str
     return query(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
 }
 
-//Status LevelDB::query(const unsigned short type, const unsigned int id, const int index, std::string& value)
-//{
-//    char tmpArray[7];
-//    makeKey(type, id, index, tmpArray);
-//
-//    return query(Slice(tmpArray, sizeof(tmpArray)/sizeof(char)), value);
-//}
-
 Status LevelDB::make()
 {
 	if(dbPath.length() == 0 || dbName.length() == 0)
@@ -161,18 +153,12 @@ Status LevelDB::destory()
 
 	return DestroyDB(dbPath, dbName, option);
 }
+
 void LevelDB::makeKey(const short type, const int id, char* key)
 {
 	integer2array(type, key, 2);
 	integer2array(id, key + 2, 4);
 }
-
-//void LevelDB::makeKey(const short type, const int id, int index, char * key)
-//{
-//    integer2array(type, key, 2);
-//    integer2array(id, key + 2, 4);
-//    integer2array(index, key + 6, 1);
-//}
 
 void LevelDB::integer2array(const long long value, char * dest, const int len)
 {

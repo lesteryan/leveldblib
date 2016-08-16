@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Histogram {
  public:

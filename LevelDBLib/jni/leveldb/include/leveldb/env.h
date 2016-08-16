@@ -23,7 +23,7 @@
 #include "util/fileSystem/VirtualMemFile.h"
 #endif
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class FileLock;
 class Logger;

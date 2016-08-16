@@ -13,7 +13,7 @@
 #include <string>
 #include "port/port.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Slice;
 class WritableFile;

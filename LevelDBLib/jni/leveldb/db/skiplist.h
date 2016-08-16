@@ -33,7 +33,7 @@
 #include "util/arena.h"
 #include "util/random.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Arena;
 

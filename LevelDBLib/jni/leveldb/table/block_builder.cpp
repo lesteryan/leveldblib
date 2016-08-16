@@ -34,7 +34,7 @@
 #include "leveldb/table_builder.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 BlockBuilder::BlockBuilder(const Options* options)
     : options_(options),

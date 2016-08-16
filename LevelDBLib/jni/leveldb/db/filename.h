@@ -13,7 +13,7 @@
 #include "leveldb/status.h"
 #include "port/port.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Env;
 

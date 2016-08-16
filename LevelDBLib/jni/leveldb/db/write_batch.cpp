@@ -21,7 +21,7 @@
 #include "db/write_batch_internal.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
 static const size_t kHeader = 12;

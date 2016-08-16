@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class Cache;
 class Comparator;

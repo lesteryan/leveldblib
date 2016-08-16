@@ -10,7 +10,7 @@
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 
 class WritableFile;
 

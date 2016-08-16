@@ -49,5 +49,7 @@ SOURCES = \
 	./leveldb/util/filesystem/FdManager.cpp \
 	./leveldb/util/filesystem/VirtualMemFile.cpp \
 	./leveldb/util/filesystem/VirtualMemFileSystem.cpp \
-	./leveldb/LevelDB.cpp
+	./leveldb/LevelDB.cpp \
+	./leveldb/LevelDBFactory.cpp \
+	./include/Reference.cpp
 	

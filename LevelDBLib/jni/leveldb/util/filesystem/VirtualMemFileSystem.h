@@ -16,7 +16,7 @@
 
 #include "VirtualMemFile.h"
 
-using namespace std;
+namespace leveldb_navi {
 
 class VirtualMemFileSystem {
 public:
@@ -60,5 +60,6 @@ private:
     std::set<std::string > _dirs;
     std::vector<VirtualMemFile *> _files;
 };
+}
 
 #endif /* VIRTUALMEMFILESYSTEM_H_ */

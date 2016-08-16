@@ -9,7 +9,7 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
-namespace leveldb {
+namespace leveldb_navi {
 namespace log {
 
 static void InitTypeCrc(uint32_t* type_crc) {
